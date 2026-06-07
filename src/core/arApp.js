@@ -39,7 +39,9 @@ async function withTimeout(promise, ms, message) {
 export async function startAR({ container, statusText }) {
   statusText.textContent = 'Loading Three.js...'
 
-  const THREE = await import('three')
+  const THREE = await import(
+    'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js'
+  )
 
   statusText.textContent = 'Loading MindAR engine...'
 
@@ -62,6 +64,8 @@ export async function startAR({ container, statusText }) {
 
   const { renderer, scene, camera } = mindarThree
 
+  renderer.outputColorSpace = THREE.SRGBColorSpace
+
   createLights(scene, THREE)
 
   const anchor = mindarThree.addAnchor(AR_CONFIG.targetIndex)
@@ -70,10 +74,12 @@ export async function startAR({ container, statusText }) {
   anchor.group.add(testCube.object)
 
   anchor.onTargetFound = () => {
+    testCube.object.visible = true
     statusText.textContent = 'Target found'
   }
 
   anchor.onTargetLost = () => {
+    testCube.object.visible = false
     statusText.textContent = 'Camera started. Point at target image.'
   }
 
