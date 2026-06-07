@@ -58,8 +58,8 @@ export async function startAR({ container, statusText }) {
   const mindarThree = new MindARThree({
     container,
     imageTargetSrc: AR_CONFIG.targetSrc,
-    filterMinCF: 0.0001,
-    filterBeta: 0.001,
+    filterMinCF: AR_CONFIG.filterMinCF,
+    filterBeta: AR_CONFIG.filterBeta,
   })
 
   const { renderer, scene, camera } = mindarThree
