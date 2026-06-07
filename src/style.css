@@ -15,13 +15,25 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: transparent;
+  background: #000;
 }
 
-#ar-container video,
+#ar-container video {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  z-index: 1 !important;
+}
+
 #ar-container canvas {
-  position: absolute;
-  inset: 0;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
 }
 
 #ui {

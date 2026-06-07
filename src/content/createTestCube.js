@@ -1,17 +1,26 @@
 export function createTestCube(THREE) {
-  const geometry = new THREE.BoxGeometry(1, 1, 1)
+  const group = new THREE.Group()
 
-  const material = new THREE.MeshNormalMaterial()
+  const planeGeometry = new THREE.PlaneGeometry(1, 1)
+  const planeMaterial = new THREE.MeshBasicMaterial({
+    color: 0xff0000,
+    transparent: true,
+    opacity: 0.75,
+    side: THREE.DoubleSide,
+  })
 
-  const cube = new THREE.Mesh(geometry, material)
+  const plane = new THREE.Mesh(planeGeometry, planeMaterial)
+  plane.position.set(0, 0, 0.01)
+  group.add(plane)
 
-  cube.scale.set(0.7, 0.7, 0.7)
+  const cubeGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5)
+  const cubeMaterial = new THREE.MeshNormalMaterial()
+  const cube = new THREE.Mesh(cubeGeometry, cubeMaterial)
 
-  // Z — это высота над image target.
-  // Если оставить z = 0, часть куба может быть "внутри" плоскости target.
   cube.position.set(0, 0, 0.35)
+  group.add(cube)
 
-  cube.visible = false
+  group.visible = false
 
   function update() {
     cube.rotation.x += 0.01
@@ -19,7 +28,7 @@ export function createTestCube(THREE) {
   }
 
   return {
-    object: cube,
+    object: group,
     update,
   }
 }
