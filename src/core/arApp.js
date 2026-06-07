@@ -1,4 +1,6 @@
-import * as THREE from 'three'
+import { AR_CONFIG } from '../config/arConfig.js'
+import { createLights } from '../scene/createLights.js'
+import { createTestCube } from '../content/createTestCube.js'
 
 export async function startAR({ container, statusText }) {
   const { MindARThree } = await import(
@@ -7,25 +9,17 @@ export async function startAR({ container, statusText }) {
 
   const mindarThree = new MindARThree({
     container,
-    imageTargetSrc: './assets/targets/tracker.mind',
+    imageTargetSrc: AR_CONFIG.targetSrc,
   })
 
   const { renderer, scene, camera } = mindarThree
-  const anchor = mindarThree.addAnchor(0)
 
-  const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1)
-  scene.add(light)
+  createLights(scene)
 
-  const geometry = new THREE.BoxGeometry(1, 1, 1)
-  const material = new THREE.MeshStandardMaterial({
-    color: 0x00ff88,
-    roughness: 0.35,
-    metalness: 0.15,
-  })
+  const anchor = mindarThree.addAnchor(AR_CONFIG.targetIndex)
 
-  const cube = new THREE.Mesh(geometry, material)
-  cube.scale.set(0.5, 0.5, 0.5)
-  anchor.group.add(cube)
+  const testCube = createTestCube()
+  anchor.group.add(testCube.object)
 
   anchor.onTargetFound = () => {
     statusText.textContent = 'Target found'
@@ -38,8 +32,7 @@ export async function startAR({ container, statusText }) {
   await mindarThree.start()
 
   renderer.setAnimationLoop(() => {
-    cube.rotation.x += 0.01
-    cube.rotation.y += 0.015
+    testCube.update()
     renderer.render(scene, camera)
   })
 }
