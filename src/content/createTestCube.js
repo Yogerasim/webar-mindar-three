@@ -1,6 +1,4 @@
-import * as THREE from 'three'
-
-export function createTestCube() {
+export function createTestCube(THREE) {
   const geometry = new THREE.BoxGeometry(1, 1, 1)
 
   const material = new THREE.MeshStandardMaterial({

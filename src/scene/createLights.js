@@ -1,6 +1,4 @@
-import * as THREE from 'three'
-
-export function createLights(scene) {
+export function createLights(scene, THREE) {
   const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1)
 
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2)
