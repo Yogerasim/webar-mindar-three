@@ -2,11 +2,11 @@ export function createBubbleMaterial(THREE, envMap = null) {
   return new THREE.MeshPhysicalMaterial({
     color: 0xffd6ff,
 
-    roughness: 0.03,
+    roughness: 0.0,
     metalness: 0.0,
 
-    transmission: 0.85,
-    thickness: 1.01,
+    transmission: 1.0,
+    thickness: 3.0,
     ior: 1.48,
 
     transparent: true,
@@ -17,7 +17,7 @@ export function createBubbleMaterial(THREE, envMap = null) {
 
     reflectivity: 1.0,
     envMap,
-    envMapIntensity: 9.5,
+    envMapIntensity: 10.0,
 
     attenuationColor: new THREE.Color(0xffb7ff),
     attenuationDistance: 0.7,
