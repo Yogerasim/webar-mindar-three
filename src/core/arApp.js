@@ -1,6 +1,7 @@
 import { AR_CONFIG } from '../config/arConfig.js'
 import { createLights } from '../scene/createLights.js'
 import { createAuraScene } from '../content/createAuraScene.js'
+import { loadEnvironmentMap } from '../loaders/loadEnvironmentMap.js'
 
 async function checkTargetFile(targetSrc) {
   const response = await fetch(targetSrc, {
@@ -68,9 +69,26 @@ export async function startAR({ container, statusText }) {
 
   createLights(scene, THREE)
 
+  statusText.textContent = 'Loading reflections...'
+
+  let envMap = null
+
+  try {
+    envMap = await loadEnvironmentMap(
+      THREE,
+      renderer,
+      './assets/hdri/sunset.exr'
+    )
+
+    scene.environment = envMap
+  } catch (error) {
+    console.warn('HDRI loading failed:', error)
+    statusText.textContent = 'HDRI failed. Starting without reflections...'
+  }
+
   const anchor = mindarThree.addAnchor(AR_CONFIG.targetIndex)
 
-  const auraScene = await createAuraScene(THREE)
+  const auraScene = await createAuraScene(THREE, envMap)
   anchor.group.add(auraScene.object)
 
   anchor.onTargetFound = () => {

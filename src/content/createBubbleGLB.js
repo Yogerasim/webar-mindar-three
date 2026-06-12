@@ -1,11 +1,11 @@
 import { loadGLB } from '../loaders/loadGLB.js'
 import { createBubbleMaterial } from '../materials/createBubbleMaterial.js'
 
-export async function createBubbleGLB(THREE) {
+export async function createBubbleGLB(THREE, envMap = null) {
   const gltf = await loadGLB(THREE, './assets/models/spheres.glb')
 
   const group = gltf.scene
-  const bubbleMaterial = createBubbleMaterial(THREE)
+  const bubbleMaterial = createBubbleMaterial(THREE, envMap)
 
   group.traverse((object) => {
     if (object.isMesh) {
@@ -17,11 +17,11 @@ export async function createBubbleGLB(THREE) {
     }
   })
 
-  // Настройка размера и положения относительно image target.
-  // Если сферы слишком большие/маленькие — правим здесь.
   group.scale.set(0.75, 0.75, 0.75)
   group.position.set(0, 0, 0.25)
-  group.rotation.set(0, 0, 0)
+
+  // Поворот по вертикальной оси на 90 градусов
+  group.rotation.set(0, Math.PI / 2, 0)
 
   const mixer = new THREE.AnimationMixer(group)
 

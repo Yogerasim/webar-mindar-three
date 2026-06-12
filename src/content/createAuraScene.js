@@ -173,7 +173,7 @@ function createAuraData() {
   }
 }
 
-export async function createAuraScene(THREE) {
+export async function createAuraScene(THREE, envMap = null) {
   const group = new THREE.Group()
   group.visible = false
 
@@ -195,7 +195,7 @@ export async function createAuraScene(THREE) {
   panel.renderOrder = 20
   group.add(panel)
 
-  const bubbleGLB = await createBubbleGLB(THREE)
+  const bubbleGLB = await createBubbleGLB(THREE, envMap)
   bubbleGLB.object.renderOrder = 10
   group.add(bubbleGLB.object)
 
