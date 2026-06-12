@@ -1,3 +1,5 @@
+import { createBubbleGLB } from './createBubbleGLB.js'
+
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
@@ -11,7 +13,6 @@ function createCanvasTexture(THREE, auraData, progress) {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-  // Background glow
   const bgGradient = ctx.createRadialGradient(512, 512, 40, 512, 512, 520)
   bgGradient.addColorStop(0, 'rgba(210, 120, 255, 0.26)')
   bgGradient.addColorStop(0.45, 'rgba(120, 80, 255, 0.16)')
@@ -19,7 +20,6 @@ function createCanvasTexture(THREE, auraData, progress) {
   ctx.fillStyle = bgGradient
   ctx.fillRect(0, 0, 1024, 1024)
 
-  // Main title
   ctx.textAlign = 'center'
   ctx.font = 'bold 56px Arial'
   ctx.fillStyle = 'rgba(235, 190, 255, 1)'
@@ -28,7 +28,6 @@ function createCanvasTexture(THREE, auraData, progress) {
   ctx.fillText('ТВОЯ АУРА', 512, 170)
   ctx.fillText('ЗАГРУЖЕНА', 512, 235)
 
-  // Panel
   ctx.shadowBlur = 32
   ctx.strokeStyle = 'rgba(220, 120, 255, 0.9)'
   ctx.lineWidth = 4
@@ -58,12 +57,10 @@ function createCanvasTexture(THREE, auraData, progress) {
     ctx.fillStyle = 'rgba(255, 235, 255, 1)'
     ctx.fillText(item.label, 220, y)
 
-    // Icon
     ctx.textAlign = 'center'
     ctx.font = '36px Arial'
     ctx.fillText(item.icon, 178, y + 2)
 
-    // Bar background
     const barX = 510
     const barY = y - 27
     const barW = 260
@@ -74,7 +71,6 @@ function createCanvasTexture(THREE, auraData, progress) {
     ctx.roundRect(barX, barY, barW, barH, 14)
     ctx.fill()
 
-    // Bar fill
     const animatedValue = item.value * progress
     const fillW = barW * (animatedValue / 100)
 
@@ -90,7 +86,6 @@ function createCanvasTexture(THREE, auraData, progress) {
     ctx.roundRect(barX, barY, fillW, barH, 14)
     ctx.fill()
 
-    // Percent
     ctx.shadowBlur = 0
     ctx.textAlign = 'left'
     ctx.font = 'bold 32px Arial'
@@ -98,7 +93,6 @@ function createCanvasTexture(THREE, auraData, progress) {
     ctx.fillText(`${Math.round(animatedValue)}%`, 800, y)
   })
 
-  // Phrase panel
   ctx.shadowColor = 'rgba(210, 90, 255, 1)'
   ctx.shadowBlur = 24
   ctx.strokeStyle = 'rgba(220, 120, 255, 0.9)'
@@ -138,7 +132,6 @@ function createCanvasTexture(THREE, auraData, progress) {
     ctx.fillText(text.trim(), 512, 765 + index * 42)
   })
 
-  // Small stars
   for (let i = 0; i < 36; i++) {
     const x = randomInt(80, 940)
     const y = randomInt(80, 940)
@@ -180,50 +173,12 @@ function createAuraData() {
   }
 }
 
-function createBubble(THREE, index) {
-  const geometry = new THREE.SphereGeometry(0.09 + Math.random() * 0.07, 32, 32)
-
-  const material = new THREE.MeshPhysicalMaterial({
-    color: 0xd9b3ff,
-    transparent: true,
-    opacity: 0.38,
-    roughness: 0.05,
-    metalness: 0,
-    transmission: 0.75,
-    thickness: 0.4,
-    clearcoat: 1,
-    clearcoatRoughness: 0.05,
-  })
-
-  const bubble = new THREE.Mesh(geometry, material)
-
-  const angle = (index / 10) * Math.PI * 2
-  const radius = 0.82 + Math.random() * 0.45
-
-  bubble.position.set(
-    Math.cos(angle) * radius,
-    Math.sin(angle) * radius * 0.75,
-    0.28 + Math.random() * 0.25
-  )
-
-  bubble.userData = {
-    baseX: bubble.position.x,
-    baseY: bubble.position.y,
-    baseZ: bubble.position.z,
-    speed: 0.7 + Math.random() * 0.9,
-    phase: Math.random() * Math.PI * 2,
-  }
-
-  return bubble
-}
-
-export function createAuraScene(THREE) {
+export async function createAuraScene(THREE) {
   const group = new THREE.Group()
   group.visible = false
 
   let auraData = createAuraData()
   let progress = 0
-  let time = 0
 
   const panelGeometry = new THREE.PlaneGeometry(1.65, 1.65)
   let panelTexture = createCanvasTexture(THREE, auraData, progress)
@@ -237,20 +192,16 @@ export function createAuraScene(THREE) {
 
   const panel = new THREE.Mesh(panelGeometry, panelMaterial)
   panel.position.set(0, 0, 0.05)
+  panel.renderOrder = 20
   group.add(panel)
 
-  const bubbles = []
-
-  for (let i = 0; i < 10; i++) {
-    const bubble = createBubble(THREE, i)
-    bubbles.push(bubble)
-    group.add(bubble)
-  }
+  const bubbleGLB = await createBubbleGLB(THREE)
+  bubbleGLB.object.renderOrder = 10
+  group.add(bubbleGLB.object)
 
   function restart() {
     auraData = createAuraData()
     progress = 0
-    time = 0
     group.visible = true
 
     panelTexture.dispose()
@@ -266,8 +217,6 @@ export function createAuraScene(THREE) {
   function update() {
     if (!group.visible) return
 
-    time += 0.016
-
     if (progress < 1) {
       progress += 0.012
 
@@ -277,19 +226,7 @@ export function createAuraScene(THREE) {
       panelMaterial.needsUpdate = true
     }
 
-    bubbles.forEach((bubble, index) => {
-      const data = bubble.userData
-
-      bubble.position.x = data.baseX + Math.sin(time * data.speed + data.phase) * 0.04
-      bubble.position.y = data.baseY + Math.cos(time * data.speed + data.phase) * 0.04
-      bubble.position.z = data.baseZ + Math.sin(time * data.speed * 1.3 + data.phase) * 0.06
-
-      const scale = 1 + Math.sin(time * data.speed + data.phase) * 0.13
-      bubble.scale.setScalar(scale)
-
-      bubble.rotation.x += 0.004
-      bubble.rotation.y += 0.006
-    })
+    bubbleGLB.update()
   }
 
   return {

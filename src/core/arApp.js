@@ -70,7 +70,7 @@ export async function startAR({ container, statusText }) {
 
   const anchor = mindarThree.addAnchor(AR_CONFIG.targetIndex)
 
-  const auraScene = createAuraScene(THREE)
+  const auraScene = await createAuraScene(THREE)
   anchor.group.add(auraScene.object)
 
   anchor.onTargetFound = () => {
