@@ -176,6 +176,8 @@ function createAuraData() {
 export async function createAuraScene(THREE, envMap = null) {
   const group = new THREE.Group()
   group.visible = false
+  group.position.set(0, -0.77, 0)
+  group.scale.setScalar(0.89)
 
   let auraData = createAuraData()
   let progress = 0
@@ -191,7 +193,7 @@ export async function createAuraScene(THREE, envMap = null) {
   })
 
   const panel = new THREE.Mesh(panelGeometry, panelMaterial)
-  panel.position.set(0, -0.80, 0.05)
+  panel.position.set(0, -0.52, 0.05)
   panel.renderOrder = 20
   group.add(panel)
 
