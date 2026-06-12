@@ -1,6 +1,6 @@
 import { AR_CONFIG } from '../config/arConfig.js'
 import { createLights } from '../scene/createLights.js'
-import { createTestCube } from '../content/createTestCube.js'
+import { createAuraScene } from '../content/createAuraScene.js'
 
 async function checkTargetFile(targetSrc) {
   const response = await fetch(targetSrc, {
@@ -70,16 +70,16 @@ export async function startAR({ container, statusText }) {
 
   const anchor = mindarThree.addAnchor(AR_CONFIG.targetIndex)
 
-  const testCube = createTestCube(THREE)
-  anchor.group.add(testCube.object)
+  const auraScene = createAuraScene(THREE)
+  anchor.group.add(auraScene.object)
 
   anchor.onTargetFound = () => {
-    testCube.object.visible = true
-    statusText.textContent = 'Target found'
+    auraScene.restart()
+    statusText.textContent = 'ТВОЯ АУРА ЗАГРУЖЕНА'
   }
 
   anchor.onTargetLost = () => {
-    testCube.object.visible = false
+    auraScene.hide()
     statusText.textContent = 'Camera started. Point at target image.'
   }
 
@@ -94,7 +94,7 @@ export async function startAR({ container, statusText }) {
   statusText.textContent = 'Camera started. Point at target image.'
 
   renderer.setAnimationLoop(() => {
-    testCube.update()
+    auraScene.update()
     renderer.render(scene, camera)
   })
 }
