@@ -191,7 +191,7 @@ export async function createAuraScene(THREE, envMap = null) {
   })
 
   const panel = new THREE.Mesh(panelGeometry, panelMaterial)
-  panel.position.set(0, -1.80, 0.05)
+  panel.position.set(0, -1.50, 0.05)
   panel.renderOrder = 20
   group.add(panel)
 
