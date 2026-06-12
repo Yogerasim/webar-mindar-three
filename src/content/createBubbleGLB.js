@@ -18,7 +18,7 @@ export async function createBubbleGLB(THREE, envMap = null) {
   })
 
   group.scale.set(0.75, 0.75, 0.75)
-  group.position.set(0, 0, 0.25)
+  group.position.set(0, -0.55, 0.25)
 
   // Поворот по вертикальной оси на 90 градусов.
   // Если после теста будет не туда — поменяем на -Math.PI / 2.

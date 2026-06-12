@@ -89,19 +89,7 @@ export async function startAR({ container, statusText }) {
   const anchor = mindarThree.addAnchor(AR_CONFIG.targetIndex)
 
   const auraScene = await createAuraScene(THREE, envMap)
-
-  // ВАЖНО:
-  // anchor.group трогать нельзя — им управляет MindAR.
-  // Поэтому создаём вложенную группу и двигаем уже её.
-  const placementGroup = new THREE.Group()
-
-  // X: влево / вправо
-  // Y: вверх / вниз по плоскости target-картинки
-  // Z: ближе / дальше от target-картинки
-  placementGroup.position.set(0, -1.1, 0)
-
-  placementGroup.add(auraScene.object)
-  anchor.group.add(placementGroup)
+  anchor.group.add(auraScene.object)
 
   anchor.onTargetFound = () => {
     auraScene.restart()
