@@ -177,10 +177,14 @@ export async function createAuraScene(THREE, envMap = null) {
   const group = new THREE.Group()
   group.visible = false
 
+  // Смещаем всю AR-композицию ниже относительно image target,
+  // чтобы сам принт футболки оставался виден.
+  group.position.set(0, -0.42, 0)
+
   let auraData = createAuraData()
   let progress = 0
 
-  const panelGeometry = new THREE.PlaneGeometry(1.65, 1.65)
+  const panelGeometry = new THREE.PlaneGeometry(1.42, 1.42)
   let panelTexture = createCanvasTexture(THREE, auraData, progress)
 
   const panelMaterial = new THREE.MeshBasicMaterial({
@@ -191,7 +195,7 @@ export async function createAuraScene(THREE, envMap = null) {
   })
 
   const panel = new THREE.Mesh(panelGeometry, panelMaterial)
-  panel.position.set(0, 0, 0.05)
+  panel.position.set(0, 0.08, 0.05)
   panel.renderOrder = 20
   group.add(panel)
 
@@ -208,6 +212,8 @@ export async function createAuraScene(THREE, envMap = null) {
     panelTexture = createCanvasTexture(THREE, auraData, progress)
     panelMaterial.map = panelTexture
     panelMaterial.needsUpdate = true
+
+    bubbleGLB.restart()
   }
 
   function hide() {
