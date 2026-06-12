@@ -88,6 +88,10 @@ export async function startAR({ container, statusText }) {
 
   const anchor = mindarThree.addAnchor(AR_CONFIG.targetIndex)
 
+  // Смещаем ВСЮ AR-сцену ниже относительно image target.
+  // X = влево/вправо, Y = вверх/вниз, Z = ближе/дальше от маркера.
+  anchor.group.position.set(0, -0.65, 0)
+
   const auraScene = await createAuraScene(THREE, envMap)
   anchor.group.add(auraScene.object)
 

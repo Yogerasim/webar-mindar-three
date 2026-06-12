@@ -177,10 +177,6 @@ export async function createAuraScene(THREE, envMap = null) {
   const group = new THREE.Group()
   group.visible = false
 
-  // Смещаем всю AR-композицию ниже относительно image target,
-  // чтобы сам принт футболки оставался виден.
-  group.position.set(0, -0.42, 0)
-
   let auraData = createAuraData()
   let progress = 0
 
