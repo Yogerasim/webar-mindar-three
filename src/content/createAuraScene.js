@@ -176,7 +176,7 @@ function createAuraData() {
 export async function createAuraScene(THREE, envMap = null) {
   const group = new THREE.Group()
   group.visible = false
-  group.position.set(0, -0.77, 0)
+  group.position.set(0, -1.15, 0)
   group.scale.setScalar(0.89)
 
   let auraData = createAuraData()
