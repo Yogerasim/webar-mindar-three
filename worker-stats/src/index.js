@@ -107,11 +107,35 @@ export default {
       })
     }
 
+    if (url.pathname === '/daily' && request.method === 'GET') {
+      const project = url.searchParams.get('project') || 'webar-mindar-three'
+      const target = url.searchParams.get('target') || 'main'
+      const limitRaw = Number(url.searchParams.get('limit') || 30)
+      const limit = Math.max(1, Math.min(365, limitRaw))
+
+      const result = await env.DB.prepare(
+        `SELECT substr(created_at, 1, 10) AS date, COUNT(*) AS count
+         FROM scans
+         WHERE project = ? AND target = ?
+         GROUP BY substr(created_at, 1, 10)
+         ORDER BY date DESC
+         LIMIT ?`
+      )
+        .bind(project, target, limit)
+        .all()
+
+      return jsonResponse(request, {
+        project,
+        target,
+        days: result.results || [],
+      })
+    }
+
     if (url.pathname === '/' && request.method === 'GET') {
       return jsonResponse(request, {
         ok: true,
         service: 'webar-stats',
-        endpoints: ['/scan', '/stats'],
+        endpoints: ['/scan', '/stats', '/daily'],
       })
     }
 
