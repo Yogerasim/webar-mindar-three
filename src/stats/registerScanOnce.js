@@ -1,11 +1,6 @@
 import { STATS_CONFIG } from '../config/statsConfig.js'
 
 export async function registerScanOnce() {
-  if (!STATS_CONFIG.endpoint) {
-    console.info('Stats endpoint is empty. Scan was not sent.')
-    return
-  }
-
   const sessionKey = `scan-registered:${STATS_CONFIG.project}:${STATS_CONFIG.target}`
 
   if (sessionStorage.getItem(sessionKey) === '1') {
@@ -15,7 +10,7 @@ export async function registerScanOnce() {
   sessionStorage.setItem(sessionKey, '1')
 
   try {
-    await fetch(`${STATS_CONFIG.endpoint}/scan`, {
+    const response = await fetch(`${STATS_CONFIG.endpoint}/scan`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -27,6 +22,12 @@ export async function registerScanOnce() {
         createdAt: new Date().toISOString(),
       }),
     })
+
+    if (!response.ok) {
+      throw new Error(`Stats request failed: ${response.status}`)
+    }
+
+    console.info('Scan registered')
   } catch (error) {
     console.warn('Scan stats failed:', error)
   }
