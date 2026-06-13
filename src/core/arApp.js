@@ -1,6 +1,7 @@
 import { AR_CONFIG } from '../config/arConfig.js'
 import { createLights } from '../scene/createLights.js'
 import { createAuraScene } from '../content/createAuraScene.js'
+import { registerScanOnce } from '../stats/registerScanOnce.js'
 import { loadEnvironmentMap } from '../loaders/loadEnvironmentMap.js'
 
 async function checkTargetFile(targetSrc) {
@@ -61,6 +62,8 @@ export async function startAR({ container, statusText }) {
     imageTargetSrc: AR_CONFIG.targetSrc,
     filterMinCF: AR_CONFIG.filterMinCF,
     filterBeta: AR_CONFIG.filterBeta,
+    warmupTolerance: AR_CONFIG.warmupTolerance,
+    missTolerance: AR_CONFIG.missTolerance,
   })
 
   const { renderer, scene, camera } = mindarThree
@@ -94,6 +97,7 @@ export async function startAR({ container, statusText }) {
   anchor.onTargetFound = () => {
     auraScene.restart()
     statusText.textContent = 'ТВОЯ АУРА ЗАГРУЖЕНА'
+    registerScanOnce()
   }
 
   anchor.onTargetLost = () => {

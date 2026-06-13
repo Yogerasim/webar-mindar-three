@@ -4,12 +4,8 @@ function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-function createCanvasTexture(THREE, auraData, progress) {
-  const canvas = document.createElement('canvas')
-  canvas.width = 1024
-  canvas.height = 1024
-
-  const ctx = canvas.getContext('2d')
+function drawAuraCanvas(ctx, auraData, progress) {
+  const canvas = ctx.canvas
 
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -17,6 +13,7 @@ function createCanvasTexture(THREE, auraData, progress) {
   bgGradient.addColorStop(0, 'rgba(210, 120, 255, 0.26)')
   bgGradient.addColorStop(0.45, 'rgba(120, 80, 255, 0.16)')
   bgGradient.addColorStop(1, 'rgba(0, 0, 0, 0)')
+
   ctx.fillStyle = bgGradient
   ctx.fillRect(0, 0, 1024, 1024)
 
@@ -25,6 +22,7 @@ function createCanvasTexture(THREE, auraData, progress) {
   ctx.fillStyle = 'rgba(235, 190, 255, 1)'
   ctx.shadowColor = 'rgba(210, 90, 255, 1)'
   ctx.shadowBlur = 24
+
   ctx.fillText('ТВОЯ АУРА', 512, 170)
   ctx.fillText('ЗАГРУЖЕНА', 512, 235)
 
@@ -72,7 +70,7 @@ function createCanvasTexture(THREE, auraData, progress) {
     ctx.fill()
 
     const animatedValue = item.value * progress
-    const fillW = barW * (animatedValue / 100)
+    const fillW = Math.max(1, barW * (animatedValue / 100))
 
     const barGradient = ctx.createLinearGradient(barX, barY, barX + barW, barY)
     barGradient.addColorStop(0, 'rgba(110, 90, 255, 1)')
@@ -145,21 +143,15 @@ function createCanvasTexture(THREE, auraData, progress) {
     ctx.arc(x, y, size, 0, Math.PI * 2)
     ctx.fill()
   }
-
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.colorSpace = THREE.SRGBColorSpace
-  texture.needsUpdate = true
-
-  return texture
 }
 
 function createAuraData() {
   const phrases = [
     'Сегодня твоя энергия особенно сильна ✨',
     'Не подстраивайся под чужие стандарты. Создавай свои.',
-    'Вселенная сегодня на твоей стороне 🌙',
+    'Вселенная сегодня на твоей стороне',
     'Время сиять ярче обычного ✨',
-    'Твоя аура сегодня особенно сильна 💜',
+    'Твоя аура сегодня особенно сильна',
   ]
 
   return {
@@ -176,14 +168,28 @@ function createAuraData() {
 export async function createAuraScene(THREE, envMap = null) {
   const group = new THREE.Group()
   group.visible = false
+
+  // Визуальная позиция сцены относительно таргета.
+  // Anchor group теперь не трогаем — он остается под управлением MindAR.
   group.position.set(0, -1.15, 0)
   group.scale.setScalar(0.89)
 
   let auraData = createAuraData()
   let progress = 0
 
+  const canvas = document.createElement('canvas')
+  canvas.width = 1024
+  canvas.height = 1024
+
+  const ctx = canvas.getContext('2d')
+
+  const panelTexture = new THREE.CanvasTexture(canvas)
+  panelTexture.colorSpace = THREE.SRGBColorSpace
+
+  drawAuraCanvas(ctx, auraData, progress)
+  panelTexture.needsUpdate = true
+
   const panelGeometry = new THREE.PlaneGeometry(1.42, 1.42)
-  let panelTexture = createCanvasTexture(THREE, auraData, progress)
 
   const panelMaterial = new THREE.MeshBasicMaterial({
     map: panelTexture,
@@ -201,15 +207,17 @@ export async function createAuraScene(THREE, envMap = null) {
   bubbleGLB.object.renderOrder = 10
   group.add(bubbleGLB.object)
 
+  function redraw(progressValue) {
+    drawAuraCanvas(ctx, auraData, progressValue)
+    panelTexture.needsUpdate = true
+  }
+
   function restart() {
     auraData = createAuraData()
     progress = 0
     group.visible = true
 
-    panelTexture.dispose()
-    panelTexture = createCanvasTexture(THREE, auraData, progress)
-    panelMaterial.map = panelTexture
-    panelMaterial.needsUpdate = true
+    redraw(progress)
 
     bubbleGLB.restart()
   }
@@ -222,12 +230,8 @@ export async function createAuraScene(THREE, envMap = null) {
     if (!group.visible) return
 
     if (progress < 1) {
-      progress += 0.012
-
-      panelTexture.dispose()
-      panelTexture = createCanvasTexture(THREE, auraData, Math.min(progress, 1))
-      panelMaterial.map = panelTexture
-      panelMaterial.needsUpdate = true
+      progress = Math.min(progress + 0.012, 1)
+      redraw(progress)
     }
 
     bubbleGLB.update()
