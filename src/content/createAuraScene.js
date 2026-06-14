@@ -171,8 +171,8 @@ export async function createAuraScene(THREE, envMap = null) {
 
   // Визуальная позиция сцены относительно таргета.
   // Anchor group теперь не трогаем — он остается под управлением MindAR.
-  group.position.set(0, -1.15, 0)
-  group.scale.setScalar(0.89)
+  group.position.set(0, -0.7, 0)
+  group.scale.setScalar(1.2)
 
   let auraData = createAuraData()
   let progress = 0
