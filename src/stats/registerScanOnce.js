@@ -1,34 +1,47 @@
-import { STATS_CONFIG } from '../config/statsConfig.js'
+export async function registerScanOnce({
+  endpoint = 'https://webar-stats.yogerasim.workers.dev',
+  project = 'webar-mindar-three',
+  target = 'main',
+  debug = true,
+} = {}) {
+  const key = `scan:${project}:${target}`
 
-export async function registerScanOnce() {
-  const sessionKey = `scan-registered:${STATS_CONFIG.project}:${STATS_CONFIG.target}`
-
-  if (sessionStorage.getItem(sessionKey) === '1') {
-    return
+  if (sessionStorage.getItem(key)) {
+    if (debug) console.log('[stats] scan already registered in this session')
+    return false
   }
 
-  sessionStorage.setItem(sessionKey, '1')
+  sessionStorage.setItem(key, '1')
 
   try {
-    const response = await fetch(`${STATS_CONFIG.endpoint}/scan`, {
+    const response = await fetch(`${endpoint}/scan`, {
       method: 'POST',
+      mode: 'cors',
+      cache: 'no-store',
+      keepalive: true,
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        project: STATS_CONFIG.project,
-        target: STATS_CONFIG.target,
+        project,
+        target,
         page: location.href,
-        createdAt: new Date().toISOString(),
+        user_agent: navigator.userAgent,
+        created_at: new Date().toISOString(),
       }),
     })
 
     if (!response.ok) {
-      throw new Error(`Stats request failed: ${response.status}`)
+      sessionStorage.removeItem(key)
+      console.warn('[stats] scan failed:', response.status)
+      return false
     }
 
-    console.info('Scan registered')
+    if (debug) console.log('[stats] scan registered')
+    return true
   } catch (error) {
-    console.warn('Scan stats failed:', error)
+    sessionStorage.removeItem(key)
+    console.warn('[stats] scan error:', error)
+    return false
   }
 }

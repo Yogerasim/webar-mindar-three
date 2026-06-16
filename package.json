@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "npm run build && gh-pages -d dist"
+    "deploy": "npm run build && gh-pages -d dist",
+    "check:prod": "node scripts/check-prod.mjs",
+    "build:prod": "npm run check:prod && vite build",
+    "deploy:prod": "npm run build:prod && gh-pages -d dist --dotfiles --message \"Deploy production\""
   },
   "devDependencies": {
     "gh-pages": "^6.3.0",
