@@ -4,13 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SMKT WebAR</title>
-    <meta http-equiv="refresh" content="0; url=/8wall/" />
     <script>
-      window.location.replace('/8wall/')
+      const nextUrl = `/8wall/?qr=${Date.now()}`
+      window.location.replace(nextUrl)
     </script>
   </head>
   <body>
     <p>Открываем WebAR-сцену...</p>
-    <p><a href="/8wall/">Перейти вручную</a></p>
+    <p><a id="manual-link" href="/8wall/">Перейти вручную</a></p>
+
+    <script>
+      document.querySelector('#manual-link').href = `/8wall/?qr=${Date.now()}`
+    </script>
   </body>
 </html>
