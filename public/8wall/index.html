@@ -97,10 +97,6 @@ window.addEventListener('unhandledrejection', function (event) {
 
   <script>
     ;(() => {
-      const key = 'smkt_page_open_stat_sent_v1'
-      if (sessionStorage.getItem(key) === '1') return
-      sessionStorage.setItem(key, '1')
-
       fetch('https://webar-stats.yogerasim.workers.dev/scan', {
         method: 'POST',
         mode: 'cors',
@@ -116,9 +112,7 @@ window.addEventListener('unhandledrejection', function (event) {
           user_agent: navigator.userAgent,
           created_at: new Date().toISOString(),
         }),
-      }).catch(() => {
-        sessionStorage.removeItem(key)
-      })
+      }).catch(() => {})
     })()
   </script>
 
@@ -127,6 +121,6 @@ window.addEventListener('unhandledrejection', function (event) {
 <body>
   <canvas id="camerafeed"></canvas>
   <div id="status">Loading...</div>
-  <script type="module" src="./smkt-scene010.js?v=010-main-open-stats-20260616-004"></script>
+  <script type="module" src="./smkt-scene010.js?v=010-page-open-no-session-20260616-001"></script>
 </body>
 </html>
