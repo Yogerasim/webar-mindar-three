@@ -55,7 +55,7 @@ function sendPageOpenStat() {
   pageOpenStatSent = true
 
   sendStatsEvent({
-    target: 'page_open',
+    target: STATS_TARGET,
     label: 'page_open',
   }).then((ok) => {
     if (ok) {
