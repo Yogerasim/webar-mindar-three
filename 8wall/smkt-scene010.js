@@ -21,24 +21,33 @@ function sendScanStat() {
   if (scanStatSent) return
   scanStatSent = true
 
-  const url = `${STATS_ENDPOINT}/scan?project=${encodeURIComponent(STATS_PROJECT)}&target=${encodeURIComponent(STATS_TARGET)}&t=${Date.now()}`
-
-  fetch(url, {
+  fetch(`${STATS_ENDPOINT}/scan`, {
     method: 'POST',
     mode: 'cors',
     cache: 'no-store',
     keepalive: true,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      project: STATS_PROJECT,
+      target: STATS_TARGET,
+      page: location.href,
+      user_agent: navigator.userAgent,
+      created_at: new Date().toISOString(),
+    }),
   })
-    .then(async (response) => {
-      console.log('Scan stat response', response.status)
+    .then((response) => {
       if (!response.ok) {
         scanStatSent = false
-        console.warn('Scan stat HTTP failed', response.status)
+        console.warn('[stats] scan failed:', response.status)
+      } else {
+        console.log('[stats] scan registered')
       }
     })
     .catch((error) => {
       scanStatSent = false
-      console.warn('Scan stat failed', error)
+      console.warn('[stats] scan error:', error)
     })
 }
 

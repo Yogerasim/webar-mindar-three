@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+  />
+  <title>SMKT WebAR</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    #camerafeed {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: #000;
+    }
+
+    #status {
+      position: fixed;
+      left: 14px;
+      right: 14px;
+      bottom: 24px;
+      z-index: 10;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      text-shadow: 0 1px 8px rgba(0,0,0,.9);
+      pointer-events: none;
+    }
+  </style>
+
+  <script crossorigin="anonymous" src="./external/runtime/runtime.js?v=smkt-runtime005"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js" async crossorigin="anonymous" data-preload-chunks="slam"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@8thwall/landing-page@1/dist/landing-page.js" crossorigin="anonymous"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script id="debug-errors">
+window.addEventListener('error', function (event) {
+  var el = document.getElementById('status')
+  if (el) el.textContent = 'JS Error: ' + event.message
+})
+
+window.addEventListener('unhandledrejection', function (event) {
+  var el = document.getElementById('status')
+  var message = event.reason && event.reason.message ? event.reason.message : String(event.reason)
+  if (el) el.textContent = 'Promise Error: ' + message
+})
+</script>
+
+
+<style id="fullscreen-camera-fix">
+  html, body {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #000 !important;
+  }
+
+  #camerafeed,
+  canvas {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    min-width: 100vw !important;
+    min-height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    display: block !important;
+    object-fit: cover !important;
+    background: #000 !important;
+  }
+</style>
+
+</head>
+
+<body>
+  <canvas id="camerafeed"></canvas>
+  <div id="status">Loading...</div>
+  <script type="module" src="./smkt-scene010.js?v=010-stats-json-20260616-002"></script>
+</body>
+</html>
