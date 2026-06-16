@@ -100,27 +100,6 @@ window.addEventListener('unhandledrejection', function (event) {
 <body>
   <canvas id="camerafeed"></canvas>
   <div id="status">Loading...</div>
-  
-<script id="smkt-qr-scan-stats">
-(function () {
-  var key = 'smkt_scan_stat_sent_v2'
-
-  if (sessionStorage.getItem(key) === '1') return
-  sessionStorage.setItem(key, '1')
-
-  var url = 'https://webar-stats.yogerasim.workers.dev/scan?project=webar-mindar-three&target=main&source=root-open&t=' + Date.now()
-
-  fetch(url, {
-    method: 'POST',
-    mode: 'cors',
-    cache: 'no-store',
-    keepalive: true
-  }).catch(function () {
-    sessionStorage.removeItem(key)
-  })
-})()
-</script>
-
-  <script type="module" src="./smkt-scene009.js"></script>
+  <script type="module" src="./smkt-scene010.js"></script>
 </body>
 </html>

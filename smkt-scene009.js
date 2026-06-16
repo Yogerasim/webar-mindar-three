@@ -9,8 +9,8 @@ const SPHERES_GLB = './assets/models/spheres.glb'
 
 const AURA_APPEAR_DELAY_MS = 0
 const AURA_LOAD_DURATION_MS = 4300
-const FIREWORK_DURATION_MS = 1300
-const PLANETS_START_DELAY_MS = 900
+const FIREWORK_DURATION_MS = 2200
+const PLANETS_START_DELAY_MS = 2200
 
 const STATS_ENDPOINT = 'https://webar-stats.yogerasim.workers.dev'
 const STATS_PROJECT = 'webar-mindar-three'
@@ -313,7 +313,53 @@ function createPanel() {
   const mesh = new THREE.Mesh(geometry, material)
   mesh.position.set(0, 0, 0.02)
 
-  const starSeeds = Array.from({ length: 58 }, (_, i) => {
+  // Главный конфиг визуала. Его потом можно крутить руками:
+  // x/y/w/h — позиции и размеры на canvas 1024x1024.
+  const UI = {
+    main: {
+      x: 92,
+      y: 62,
+      w: 840,
+      h: 500,
+      r: 38,
+    },
+    title: {
+      y1: 145,
+      y2: 197,
+      size1: 58,
+      size2: 42,
+    },
+    metrics: {
+      startY: 270,
+      gap: 68,
+      labelX: 150,
+      barX: 340,
+      barW: 350,
+      valueX: 830,
+      barH: 22,
+      labelSize: 27,
+      valueSize: 30,
+    },
+    phrase: {
+      x: 118,
+      y: 610,
+      w: 788,
+      h: 116,
+      r: 32,
+      textY: 658,
+      fontSize: 29,
+    },
+    planets: {
+      cx: 512,
+      cy: 392,
+      rx: 510,
+      ry: 310,
+      baseSize: 22,
+      speed: 0.42,
+    },
+  }
+
+  const starSeeds = Array.from({ length: 70 }, (_, i) => {
     const a = Math.sin(i * 999.13) * 10000
     const b = Math.sin(i * 456.77) * 10000
     const c = Math.sin(i * 77.31) * 10000
@@ -321,11 +367,19 @@ function createPanel() {
 
     return {
       x: (a - Math.floor(a)) * canvas2d.width,
-      y: 40 + (b - Math.floor(b)) * (canvas2d.height - 80),
-      r: 1.2 + (c - Math.floor(c)) * 2.8,
+      y: 30 + (b - Math.floor(b)) * (canvas2d.height - 60),
+      r: 0.9 + (c - Math.floor(c)) * 2.2,
       phase: (d - Math.floor(d)) * Math.PI * 2,
     }
   })
+
+  const bursts = [
+    { x: 260, y: 220, delay: 0.00, scale: 0.86 },
+    { x: 760, y: 255, delay: 0.16, scale: 0.78 },
+    { x: 510, y: 355, delay: 0.32, scale: 1.04 },
+    { x: 290, y: 690, delay: 0.48, scale: 0.82 },
+    { x: 735, y: 665, delay: 0.64, scale: 0.92 },
+  ]
 
   return {
     mesh,
@@ -347,67 +401,57 @@ function createPanel() {
       ctx.globalAlpha = alpha
 
       const cx = w / 2
-      const cardX = 102
-      const cardY = 74
-      const cardW = 820
-      const cardH = 560
 
-      // Спокойные звёзды без быстрого шума
+      // Спокойные звёзды: медленное мерцание, без быстрых шумных точек
       for (const star of starSeeds) {
-        const twinkle = 0.42 + 0.34 * Math.sin(elapsed * 1.15 + star.phase)
+        const twinkle = 0.34 + 0.36 * Math.sin(elapsed * 0.95 + star.phase)
         ctx.beginPath()
         ctx.fillStyle = `rgba(255, 235, 255, ${twinkle})`
         ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2)
         ctx.fill()
       }
 
-      // Основная стеклянная карточка
-      const gradient = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH)
-      gradient.addColorStop(0, 'rgba(255, 76, 205, 0.28)')
-      gradient.addColorStop(0.45, 'rgba(138, 84, 255, 0.22)')
-      gradient.addColorStop(1, 'rgba(57, 210, 255, 0.17)')
+      // Основная карточка: только заголовок и муды
+      const main = UI.main
+      const mainGradient = ctx.createLinearGradient(main.x, main.y, main.x + main.w, main.y + main.h)
+      mainGradient.addColorStop(0, 'rgba(255, 76, 205, 0.27)')
+      mainGradient.addColorStop(0.5, 'rgba(138, 84, 255, 0.21)')
+      mainGradient.addColorStop(1, 'rgba(57, 210, 255, 0.16)')
 
-      roundRect(ctx, cardX, cardY, cardW, cardH, 38)
-      ctx.fillStyle = gradient
+      roundRect(ctx, main.x, main.y, main.w, main.h, main.r)
+      ctx.fillStyle = mainGradient
       ctx.fill()
 
       ctx.lineWidth = 3
       ctx.strokeStyle = 'rgba(255, 215, 255, 0.82)'
       ctx.stroke()
 
-      // Мягкое сияние
-      const glow = ctx.createRadialGradient(cx, cardY + 160, 10, cx, cardY + 180, 460)
-      glow.addColorStop(0, 'rgba(255, 86, 205, 0.25)')
+      const glow = ctx.createRadialGradient(cx, main.y + 155, 10, cx, main.y + 180, 470)
+      glow.addColorStop(0, 'rgba(255, 86, 205, 0.22)')
       glow.addColorStop(1, 'rgba(255, 86, 205, 0)')
       ctx.fillStyle = glow
-      ctx.fillRect(cardX - 90, cardY - 90, cardW + 180, cardH + 180)
+      ctx.fillRect(main.x - 90, main.y - 90, main.w + 180, main.h + 180)
 
-      // Заголовок
       ctx.textAlign = 'center'
       ctx.fillStyle = '#ffffff'
-      ctx.font = '800 58px system-ui, -apple-system, BlinkMacSystemFont, sans-serif'
-      ctx.fillText('ТВОЙ ВАЙБ', cx, cardY + 92)
+      ctx.font = `800 ${UI.title.size1}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+      ctx.fillText('ТВОЙ ВАЙБ', cx, UI.title.y1)
 
-      ctx.font = '800 46px system-ui, -apple-system, BlinkMacSystemFont, sans-serif'
+      ctx.font = `800 ${UI.title.size2}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
       ctx.fillStyle = 'rgba(255, 224, 255, 0.96)'
-      ctx.fillText('ТВОЯ КРАСОТА', cx, cardY + 148)
+      ctx.fillText('ТВОЯ КРАСОТА', cx, UI.title.y2)
 
-      // Метрики: аура первая, остальные по очереди
+      // Метрики: отдельные зоны для названия, шкалы и процентов
       const metrics = auraData.metrics || []
-      const startY = cardY + 218
-      const gap = 74
-      const labelX = cardX + 72
-      const barX = cardX + 292
-      const barW = cardW - 380
-      const barH = 24
+      const m = UI.metrics
 
       metrics.forEach((metric, i) => {
         const p = progressList[i] ?? 0
         const value = Math.round((metric.value || 0) * p)
-        const y = startY + i * gap
+        const y = m.startY + i * m.gap
 
         const pop = Math.min(1, p * 1.2)
-        const scale = 0.965 + 0.035 * easeOutBack(pop)
+        const scale = 0.97 + 0.03 * easeOutBack(pop)
 
         ctx.save()
         ctx.translate(cx, y)
@@ -415,99 +459,103 @@ function createPanel() {
         ctx.translate(-cx, -y)
 
         ctx.textAlign = 'left'
-        ctx.font = '700 28px system-ui, -apple-system, BlinkMacSystemFont, sans-serif'
-        ctx.fillStyle = i === 0 ? 'rgba(255, 245, 255, 1)' : 'rgba(240, 226, 255, 0.93)'
-        ctx.fillText(metric.label || metric.name || 'Муд', labelX, y + 7)
+        ctx.font = `700 ${m.labelSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+        ctx.fillStyle = i === 0 ? 'rgba(255, 245, 255, 1)' : 'rgba(240, 226, 255, 0.94)'
+        ctx.fillText(metric.label || metric.name || 'Муд', m.labelX, y + 8)
 
-        ctx.textAlign = 'right'
-        ctx.font = '800 31px system-ui, -apple-system, BlinkMacSystemFont, sans-serif'
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.98)'
-        ctx.fillText(`${value}%`, cardX + cardW - 72, y + 8)
-
-        roundRect(ctx, barX, y - 15, barW, barH, 14)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.16)'
+        // фон шкалы
+        roundRect(ctx, m.barX, y - 13, m.barW, m.barH, 14)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'
         ctx.fill()
 
-        const fillW = Math.max(0, barW * p)
-        const barGradient = ctx.createLinearGradient(barX, y, barX + barW, y)
+        // заполнение шкалы
+        const fillW = Math.max(0, m.barW * p)
+        const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
         barGradient.addColorStop(0, '#ff68df')
         barGradient.addColorStop(0.55, '#b079ff')
         barGradient.addColorStop(1, '#67e8ff')
 
-        roundRect(ctx, barX, y - 15, fillW, barH, 14)
+        roundRect(ctx, m.barX, y - 13, fillW, m.barH, 14)
         ctx.fillStyle = barGradient
         ctx.fill()
 
+        // проценты справа, отдельно от шкалы
+        ctx.textAlign = 'right'
+        ctx.font = `800 ${m.valueSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.98)'
+        ctx.fillText(`${value}%`, m.valueX, y + 10)
+
         if (p > 0.05 && p < 1) {
-          const sparkX = barX + fillW
+          const sparkX = m.barX + fillW
           ctx.beginPath()
-          ctx.fillStyle = 'rgba(255,255,255,0.9)'
-          ctx.arc(sparkX, y - 3, 5 + 2.5 * Math.sin(elapsed * 4 + i), 0, Math.PI * 2)
+          ctx.fillStyle = 'rgba(255,255,255,0.88)'
+          ctx.arc(sparkX, y - 2, 4.5 + 2 * Math.sin(elapsed * 3.5 + i), 0, Math.PI * 2)
           ctx.fill()
         }
 
         ctx.restore()
       })
 
-      // Нижняя рамка фразы всегда есть, но до конца загрузки она пустая
-      const phraseBoxX = cardX + 52
-      const phraseBoxY = cardY + cardH - 118
-      const phraseBoxW = cardW - 104
-      const phraseBoxH = 78
-
-      roundRect(ctx, phraseBoxX, phraseBoxY, phraseBoxW, phraseBoxH, 28)
-      ctx.fillStyle = 'rgba(20, 8, 38, 0.34)'
+      // Отдельная нижняя рамка для фразы. Она НЕ внутри основной карточки.
+      const phrase = UI.phrase
+      roundRect(ctx, phrase.x, phrase.y, phrase.w, phrase.h, phrase.r)
+      ctx.fillStyle = 'rgba(20, 8, 38, 0.42)'
       ctx.fill()
 
-      ctx.lineWidth = 2.4
-      ctx.strokeStyle = loaded ? 'rgba(255, 225, 255, 0.92)' : 'rgba(255, 225, 255, 0.42)'
+      ctx.lineWidth = 2.5
+      ctx.strokeStyle = loaded ? 'rgba(255, 225, 255, 0.94)' : 'rgba(255, 225, 255, 0.38)'
       ctx.stroke()
 
+      // Пять фейерверков по очереди
+      if (fireworkT > 0 && fireworkT < 1) {
+        for (const burstData of bursts) {
+          const local = clamp01((fireworkT - burstData.delay) / 0.34)
+
+          if (local <= 0 || local >= 1) continue
+
+          const burst = easeOutCubic(local)
+          const particles = 34
+          const fade = 1 - burst
+
+          for (let i = 0; i < particles; i++) {
+            const angle = (Math.PI * 2 * i) / particles
+            const seed = 0.75 + 0.45 * Math.sin(i * 12.989 + burstData.x)
+            const radius = (25 + burst * 250 * seed) * burstData.scale
+            const x = burstData.x + Math.cos(angle) * radius
+            const y = burstData.y + Math.sin(angle) * radius
+            const r = (6.5 * fade + 1.5) * burstData.scale
+
+            ctx.beginPath()
+            ctx.fillStyle = `rgba(255, ${150 + (i % 5) * 20}, 255, ${fade})`
+            ctx.arc(x, y, r, 0, Math.PI * 2)
+            ctx.fill()
+          }
+
+          ctx.beginPath()
+          ctx.strokeStyle = `rgba(255,255,255,${0.55 * fade})`
+          ctx.lineWidth = 6 * fade
+          ctx.arc(burstData.x, burstData.y, 60 + burst * 150 * burstData.scale, 0, Math.PI * 2)
+          ctx.stroke()
+        }
+      }
+
+      // Фраза появляется только после фейерверков
       if (loaded) {
-        const phraseAlpha = clamp01((fireworkT - 0.45) * 2.4)
+        const phraseAlpha = clamp01((fireworkT - 0.82) * 5.5)
         ctx.save()
         ctx.globalAlpha = alpha * phraseAlpha
         ctx.textAlign = 'center'
         ctx.fillStyle = 'rgba(255,255,255,0.98)'
-        ctx.font = '700 26px system-ui, -apple-system, BlinkMacSystemFont, sans-serif'
-        wrapText(ctx, auraData.phrase || '', cx, phraseBoxY + 33, phraseBoxW - 70, 32)
+        ctx.font = `700 ${phrase.fontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+        wrapText(ctx, auraData.phrase || '', cx, phrase.textY, phrase.w - 80, 34)
         ctx.restore()
       }
 
-      // Фейерверк после полной загрузки
-      if (fireworkT > 0 && fireworkT < 1) {
-        const burst = easeOutCubic(fireworkT)
-        const particles = 48
-
-        for (let i = 0; i < particles; i++) {
-          const angle = (Math.PI * 2 * i) / particles
-          const seed = 0.82 + 0.34 * Math.sin(i * 12.989)
-          const radius = 34 + burst * 360 * seed
-          const x = cx + Math.cos(angle) * radius
-          const y = cardY + 300 + Math.sin(angle) * radius * 0.62
-          const r = 8 * (1 - burst) + 2
-
-          ctx.beginPath()
-          ctx.fillStyle = `rgba(255, ${160 + (i % 4) * 20}, 255, ${1 - burst})`
-          ctx.arc(x, y, r, 0, Math.PI * 2)
-          ctx.fill()
-        }
-
-        ctx.beginPath()
-        ctx.strokeStyle = `rgba(255,255,255,${0.75 * (1 - burst)})`
-        ctx.lineWidth = 8 * (1 - burst)
-        ctx.arc(cx, cardY + 300, 90 + burst * 300, 0, Math.PI * 2)
-        ctx.stroke()
-      }
-
-      // 4 планеты после фейерверка
+      // 4 планеты после фейерверков + блёстки по траектории
       if (planetsT > 0) {
         const appear = easeOutCubic(planetsT)
-        const orbitCx = cx
-        const orbitCy = cardY + 292
-        const orbitRx = cardW * 0.58
-        const orbitRy = cardH * 0.43
-        const time = elapsed * 0.42
+        const pl = UI.planets
+        const time = elapsed * pl.speed
 
         const planetColors = [
           ['#ff79d8', '#fff0fb'],
@@ -518,9 +566,23 @@ function createPanel() {
 
         for (let i = 0; i < 4; i++) {
           const a = time + i * Math.PI * 0.5
-          const x = orbitCx + Math.cos(a) * orbitRx * appear
-          const y = orbitCy + Math.sin(a) * orbitRy * appear
-          const size = (22 + i * 4) * appear
+          const x = pl.cx + Math.cos(a) * pl.rx * appear
+          const y = pl.cy + Math.sin(a) * pl.ry * appear
+          const size = (pl.baseSize + i * 4) * appear
+
+          // Хвост блёсток позади планеты
+          for (let t = 1; t <= 12; t++) {
+            const ta = a - t * 0.075
+            const tx = pl.cx + Math.cos(ta) * pl.rx * appear
+            const ty = pl.cy + Math.sin(ta) * pl.ry * appear
+            const tr = Math.max(1, size * (0.13 - t * 0.007))
+            const opacity = Math.max(0, 0.36 - t * 0.027)
+
+            ctx.beginPath()
+            ctx.fillStyle = `rgba(255, 235, 255, ${opacity})`
+            ctx.arc(tx, ty, tr, 0, Math.PI * 2)
+            ctx.fill()
+          }
 
           const pg = ctx.createRadialGradient(x - size * 0.35, y - size * 0.35, 2, x, y, size)
           pg.addColorStop(0, planetColors[i][1])
@@ -532,7 +594,7 @@ function createPanel() {
           ctx.fill()
 
           ctx.beginPath()
-          ctx.strokeStyle = `rgba(255,255,255,${0.18 * appear})`
+          ctx.strokeStyle = `rgba(255,255,255,${0.20 * appear})`
           ctx.lineWidth = 2
           ctx.ellipse(x, y, size * 1.45, size * 0.42, -0.45, 0, Math.PI * 2)
           ctx.stroke()
