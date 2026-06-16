@@ -15,13 +15,11 @@ const PLANETS_START_DELAY_MS = 2200
 const STATS_ENDPOINT = 'https://webar-stats.yogerasim.workers.dev'
 const STATS_PROJECT = 'webar-mindar-three'
 const STATS_TARGET = 'main'
+let pageOpenStatSent = false
 let scanStatSent = false
 
-function sendScanStat() {
-  if (scanStatSent) return
-  scanStatSent = true
-
-  fetch(`${STATS_ENDPOINT}/scan`, {
+function sendStatsEvent({ target, label }) {
+  return fetch(`${STATS_ENDPOINT}/scan`, {
     method: 'POST',
     mode: 'cors',
     cache: 'no-store',
@@ -31,7 +29,7 @@ function sendScanStat() {
     },
     body: JSON.stringify({
       project: STATS_PROJECT,
-      target: STATS_TARGET,
+      target,
       page: location.href,
       user_agent: navigator.userAgent,
       created_at: new Date().toISOString(),
@@ -39,19 +37,51 @@ function sendScanStat() {
   })
     .then((response) => {
       if (!response.ok) {
-        scanStatSent = false
-        console.warn('[stats] scan failed:', response.status)
-        setStatus(`TARGET FOUND · STATS FAILED ${response.status}`)
-      } else {
-        console.log('[stats] scan registered')
-        setStatus('TARGET FOUND · STATS SENT')
+        console.warn(`[stats] ${label} failed:`, response.status)
+        return false
       }
+
+      console.log(`[stats] ${label} registered`)
+      return true
     })
     .catch((error) => {
-      scanStatSent = false
-      console.warn('[stats] scan error:', error)
-      setStatus('TARGET FOUND · STATS ERROR')
+      console.warn(`[stats] ${label} error:`, error)
+      return false
     })
+}
+
+function sendPageOpenStat() {
+  if (pageOpenStatSent) return
+  pageOpenStatSent = true
+
+  sendStatsEvent({
+    target: 'page_open',
+    label: 'page_open',
+  }).then((ok) => {
+    if (ok) {
+      setStatus('PAGE OPEN · STATS SENT')
+    } else {
+      pageOpenStatSent = false
+      setStatus('PAGE OPEN · STATS ERROR')
+    }
+  })
+}
+
+function sendScanStat() {
+  if (scanStatSent) return
+  scanStatSent = true
+
+  sendStatsEvent({
+    target: STATS_TARGET,
+    label: 'target_scan',
+  }).then((ok) => {
+    if (ok) {
+      setStatus('TARGET FOUND · STATS SENT')
+    } else {
+      scanStatSent = false
+      setStatus('TARGET FOUND · STATS ERROR')
+    }
+  })
 }
 
 const statusEl = document.querySelector('#status')
