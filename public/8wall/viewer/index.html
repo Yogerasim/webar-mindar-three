@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMKT Scene Viewer</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #090512;
+      color: white;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    .card {
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 18px;
+      padding: 18px;
+      background: rgba(255,255,255,.08);
+    }
+
+    label {
+      display: block;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+    }
+
+    code, pre {
+      white-space: pre-wrap;
+      color: #ffd1ff;
+    }
+
+    a {
+      color: #ffd1ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>SMKT Scene Viewer</h1>
+  <p>Безопасный viewer для будущей настройки сцены. Сейчас он не меняет production-сцену напрямую, чтобы не сломать статистику и target.</p>
+
+  <p>
+    <a href="/8wall/">Открыть production AR scene</a>
+  </p>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Planets</h2>
+      <label>Orbit radius X <input type="range" min="100" max="700" value="420"></label>
+      <label>Orbit radius Y <input type="range" min="100" max="500" value="250"></label>
+      <label>Base size <input type="range" min="5" max="80" value="20"></label>
+      <label>Speed <input type="range" min="0" max="200" value="42"></label>
+    </section>
+
+    <section class="card">
+      <h2>Panel / Glow</h2>
+      <label>Panel opacity <input type="range" min="0" max="100" value="66"></label>
+      <label>Border opacity <input type="range" min="0" max="100" value="82"></label>
+      <label>Glow <input type="range" min="0" max="100" value="82"></label>
+    </section>
+
+    <section class="card">
+      <h2>Next step</h2>
+      <p>Следующий коммит: подключить эти значения к <code>smkt-scene010.js</code> через отдельный <code>sceneConfig.js</code>, чтобы визуал менялся без правки статистики.</p>
+    </section>
+  </div>
+</body>
+</html>
