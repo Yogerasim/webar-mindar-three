@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Corporate AR Stats</title>
+
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 50% 15%, rgba(255, 90, 230, 0.26), transparent 34%),
+          radial-gradient(circle at 20% 85%, rgba(120, 95, 255, 0.24), transparent 32%),
+          #090512;
+        color: white;
+        font-family: Arial, sans-serif;
+      }
+
+      .card {
+        width: min(620px, calc(100vw - 40px));
+        box-sizing: border-box;
+        padding: 36px 30px;
+        border-radius: 32px;
+        background: rgba(255, 255, 255, 0.085);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        box-shadow: 0 0 60px rgba(225, 80, 255, 0.24);
+        text-align: center;
+        backdrop-filter: blur(18px);
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        opacity: 0.62;
+        font-size: 13px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0 0 30px;
+        font-size: 30px;
+        line-height: 1.14;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 18px;
+      }
+
+      .metric {
+        padding: 24px 18px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .label {
+        opacity: 0.72;
+        font-size: 18px;
+      }
+
+      .number {
+        margin: 10px 0 0;
+        font-size: 68px;
+        line-height: 1;
+        font-weight: 800;
+      }
+
+      .history {
+        margin-top: 26px;
+        text-align: left;
+      }
+
+      .history-title {
+        margin: 0 0 14px;
+        font-size: 20px;
+        text-align: center;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.055);
+      }
+
+      th,
+      td {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+        font-size: 15px;
+      }
+
+      th {
+        opacity: 0.72;
+        font-weight: 400;
+      }
+
+      td:last-child,
+      th:last-child {
+        text-align: right;
+      }
+
+      tr:last-child td {
+        border-bottom: none;
+      }
+
+      .hint {
+        margin-top: 22px;
+        opacity: 0.56;
+        font-size: 13px;
+        text-align: center;
+      }
+
+      .error {
+        color: #ffd1f8;
+      }
+
+      @media (min-width: 620px) {
+        .grid {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .number {
+          font-size: 58px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="card">
+      <p class="eyebrow">Corporate dashboard</p>
+      <h1>AR статистика сканирований</h1>
+
+      <section class="grid">
+        <div class="metric">
+          <div class="label">Сканов сегодня</div>
+          <div id="today" class="number">—</div>
+        </div>
+
+        <div class="metric">
+          <div class="label">Сканов за всё время</div>
+          <div id="total" class="number">—</div>
+        </div>
+      </section>
+
+      <section class="history">
+        <h2 class="history-title">История по дням</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>День</th>
+              <th>Сканов</th>
+            </tr>
+          </thead>
+
+          <tbody id="dailyBody">
+            <tr>
+              <td colspan="3">Загрузка...</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <div id="hint" class="hint">Загрузка...</div>
+    </main>
+
+    <script>
+      const STATS_ENDPOINT = 'https://webar-stats.yogerasim.workers.dev'
+      const PROJECT = 'webar-mindar-three'
+      const TARGET = 'main'
+
+      function formatDate(dateString) {
+        const date = new Date(`${dateString}T12:00:00`)
+        return new Intl.DateTimeFormat('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).format(date)
+      }
+
+      function formatWeekday(dateString) {
+        const date = new Date(`${dateString}T12:00:00`)
+        return new Intl.DateTimeFormat('ru-RU', {
+          weekday: 'long',
+        }).format(date)
+      }
+
+      function renderDailyTable(days) {
+        const dailyBody = document.querySelector('#dailyBody')
+
+        if (!days.length) {
+          dailyBody.innerHTML = `
+            <tr>
+              <td colspan="3">Пока нет сканов</td>
+            </tr>
+          `
+          return
+        }
+
+        dailyBody.innerHTML = days
+          .map((day) => {
+            return `
+              <tr>
+                <td>${formatDate(day.date)}</td>
+                <td>${formatWeekday(day.date)}</td>
+                <td>${day.count}</td>
+              </tr>
+            `
+          })
+          .join('')
+      }
+
+      async function loadStats() {
+        const hint = document.querySelector('#hint')
+
+        try {
+          const statsUrl = `${STATS_ENDPOINT}/stats?project=${encodeURIComponent(PROJECT)}&target=${encodeURIComponent(TARGET)}`
+          const dailyUrl = `${STATS_ENDPOINT}/daily?project=${encodeURIComponent(PROJECT)}&target=${encodeURIComponent(TARGET)}&limit=30`
+
+          const [statsResponse, dailyResponse] = await Promise.all([
+            fetch(statsUrl),
+            fetch(dailyUrl),
+          ])
+
+          if (!statsResponse.ok) {
+            throw new Error(`Stats HTTP ${statsResponse.status}`)
+          }
+
+          if (!dailyResponse.ok) {
+            throw new Error(`Daily HTTP ${dailyResponse.status}`)
+          }
+
+          const stats = await statsResponse.json()
+          const daily = await dailyResponse.json()
+
+          document.querySelector('#today').textContent = stats.todayCount ?? 0
+          document.querySelector('#total').textContent = stats.totalCount ?? 0
+          renderDailyTable(daily.days || [])
+
+          hint.classList.remove('error')
+          hint.textContent = `Обновлено: ${new Date().toLocaleTimeString()}`
+        } catch (error) {
+          console.warn(error)
+          hint.classList.add('error')
+          hint.textContent = 'Не удалось загрузить статистику'
+        }
+      }
+
+      loadStats()
+      setInterval(loadStats, 10000)
+    </script>
+  </body>
+</html>
