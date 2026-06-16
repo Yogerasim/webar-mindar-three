@@ -2,26 +2,15 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>WebAR MindAR + Three.js</title>
-
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-        }
-      }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SMKT WebAR</title>
+    <meta http-equiv="refresh" content="0; url=/8wall/" />
+    <script>
+      window.location.replace('/8wall/')
     </script>
   </head>
   <body>
-    <div id="ar-container"></div>
-
-    <div id="ui">
-      <button id="startButton">Start AR</button>
-      <p id="status">Ready</p>
-    </div>
-
-    <script type="module" src="/src/main.js"></script>
+    <p>Открываем WebAR-сцену...</p>
+    <p><a href="/8wall/">Перейти вручную</a></p>
   </body>
 </html>
