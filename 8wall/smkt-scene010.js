@@ -41,13 +41,16 @@ function sendScanStat() {
       if (!response.ok) {
         scanStatSent = false
         console.warn('[stats] scan failed:', response.status)
+        setStatus(`TARGET FOUND · STATS FAILED ${response.status}`)
       } else {
         console.log('[stats] scan registered')
+        setStatus('TARGET FOUND · STATS SENT')
       }
     })
     .catch((error) => {
       scanStatSent = false
       console.warn('[stats] scan error:', error)
+      setStatus('TARGET FOUND · STATS ERROR')
     })
 }
 
