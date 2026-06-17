@@ -4,17 +4,58 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SMKT WebAR</title>
+
     <script>
       const nextUrl = `/8wall/?qr=${Date.now()}`
-      window.location.replace(nextUrl)
+
+      function goToAR() {
+        window.location.replace(nextUrl)
+      }
+
+      function trackQrOpen() {
+        const payload = JSON.stringify({
+          project: 'webar-mindar-three',
+          target: 'main',
+          page: location.href,
+          user_agent: navigator.userAgent,
+          created_at: new Date().toISOString(),
+        })
+
+        try {
+          if (navigator.sendBeacon) {
+            const blob = new Blob([payload], { type: 'application/json' })
+            navigator.sendBeacon('https://webar-stats.yogerasim.workers.dev/scan', blob)
+            setTimeout(goToAR, 250)
+            return
+          }
+        } catch (error) {}
+
+        fetch('https://webar-stats.yogerasim.workers.dev/scan', {
+          method: 'POST',
+          mode: 'cors',
+          cache: 'no-store',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: payload,
+        })
+          .catch(() => {})
+          .finally(() => {
+            setTimeout(goToAR, 250)
+          })
+      }
+
+      trackQrOpen()
     </script>
   </head>
+
   <body>
     <p>Открываем WebAR-сцену...</p>
     <p><a id="manual-link" href="/8wall/">Перейти вручную</a></p>
 
     <script>
-      document.querySelector('#manual-link').href = `/8wall/?qr=${Date.now()}`
+      document.querySelector('#manual-link').href = nextUrl
     </script>
   </body>
 </html>
