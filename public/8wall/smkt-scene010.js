@@ -1,16 +1,58 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { DEFAULT_SCENE_CONFIG } from './config/scene-config.js'
 
 window.THREE = THREE
 
-const TARGET_NAME = 'waves'
-const TARGET_JSON = './image-targets/waves.json'
-const SPHERES_GLB = './assets/models/spheres.glb'
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
 
-const AURA_APPEAR_DELAY_MS = 0
-const AURA_LOAD_DURATION_MS = 4300
-const FIREWORK_DURATION_MS = 2200
-const PLANETS_START_DELAY_MS = 2200
+function deepMerge(base, patch) {
+  if (!isPlainObject(patch)) return base
+
+  const result = Array.isArray(base) ? [...base] : { ...base }
+
+  for (const [key, value] of Object.entries(patch)) {
+    if (isPlainObject(value) && isPlainObject(result[key])) {
+      result[key] = deepMerge(result[key], value)
+    } else {
+      result[key] = value
+    }
+  }
+
+  return result
+}
+
+function getRuntimeSceneConfig(defaultConfig) {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const allowDraft = params.get('viewer') === '1' || params.get('useDraftConfig') === '1'
+
+    if (!allowDraft) return defaultConfig
+
+    const stored = window.localStorage.getItem('smktSceneConfigDraft')
+    if (stored) {
+      return deepMerge(defaultConfig, JSON.parse(stored))
+    }
+  } catch (error) {
+    console.warn('[config] failed to read viewer config:', error)
+  }
+
+  return defaultConfig
+}
+
+const SCENE_CONFIG = getRuntimeSceneConfig(DEFAULT_SCENE_CONFIG)
+
+
+const TARGET_NAME = SCENE_CONFIG.target.name
+const TARGET_JSON = SCENE_CONFIG.target.json
+const SPHERES_GLB = SCENE_CONFIG.target.spheresGlb
+
+const AURA_APPEAR_DELAY_MS = SCENE_CONFIG.timing.auraAppearDelayMs
+const AURA_LOAD_DURATION_MS = SCENE_CONFIG.timing.auraLoadDurationMs
+const FIREWORK_DURATION_MS = SCENE_CONFIG.timing.fireworkDurationMs
+const PLANETS_START_DELAY_MS = SCENE_CONFIG.timing.planetsStartDelayMs
 
 const STATS_ENDPOINT = 'https://webar-stats.yogerasim.workers.dev'
 const STATS_PROJECT = 'webar-mindar-three'
@@ -107,21 +149,14 @@ function randomInt(min, max) {
 }
 
 function createAuraData() {
-  const phrases = [
-    'Сегодня твоя энергия особенно сильна ✨',
-    'Не подстраивайся под чужие стандарты. Создавай свои.',
-    'Вселенная сегодня на твоей стороне 🌙',
-    'Время сиять ярче обычного ✨',
-    'Твоя аура сегодня особенно сильна 💜',
-  ]
+  const phrases = SCENE_CONFIG.aura.phrases
 
   return {
-    metrics: [
-      { label: 'сияние', icon: '✦', value: randomInt(80, 100) },
-      { label: 'красота', icon: '♥', value: randomInt(80, 100) },
-      { label: 'энергия', icon: '⚡', value: randomInt(80, 100) },
-      { label: 'аура', icon: '☁', value: randomInt(80, 100) },
-    ],
+    metrics: SCENE_CONFIG.aura.metrics.map((metric) => ({
+      label: metric.label,
+      icon: metric.icon,
+      value: randomInt(metric.min, metric.max),
+    })),
     phrase: phrases[randomInt(0, phrases.length - 1)],
   }
 }
@@ -158,8 +193,8 @@ function drawAuraCanvas(ctx, auraData, progress, alpha) {
   ctx.fillStyle = 'rgba(255, 225, 255, 1)'
   ctx.shadowColor = 'rgba(220, 100, 255, 1)'
   ctx.shadowBlur = 28
-  ctx.fillText('ТВОЙ ВАЙБ', 512, 165)
-  ctx.fillText('ТВОЯ КРАСОТА', 512, 230)
+  ctx.fillText(SCENE_CONFIG.aura.titleLine1, 512, 165)
+  ctx.fillText(SCENE_CONFIG.aura.titleLine2, 512, 230)
 
   ctx.shadowBlur = 30
   ctx.strokeStyle = 'rgba(230, 140, 255, 0.95)'
@@ -477,11 +512,11 @@ function createPanel() {
       ctx.textAlign = 'center'
       ctx.fillStyle = '#ffffff'
       ctx.font = `800 ${UI.title.size1}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-      ctx.fillText('ТВОЙ ВАЙБ', cx, UI.title.y1)
+      ctx.fillText(SCENE_CONFIG.aura.titleLine1, cx, UI.title.y1)
 
       ctx.font = `800 ${UI.title.size2}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
       ctx.fillStyle = 'rgba(255, 224, 255, 0.96)'
-      ctx.fillText('ТВОЯ КРАСОТА', cx, UI.title.y2)
+      ctx.fillText(SCENE_CONFIG.aura.titleLine2, cx, UI.title.y2)
 
       // Метрики: отдельные зоны для названия, шкалы и процентов
       const metrics = auraData.metrics || []
@@ -830,7 +865,7 @@ function makeAuraExperience(scene) {
     } else if (fireworkT < 1) {
       setStatus('Вайб загружен ✨')
     } else {
-      setStatus('ТВОЙ ВАЙБ — ТВОЯ КРАСОТА')
+      setStatus(SCENE_CONFIG.aura.statusText)
     }
   }
 
