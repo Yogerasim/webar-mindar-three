@@ -13,14 +13,21 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    h1 {
+    h1, h2 {
       margin-top: 0;
+    }
+
+    .notice {
+      max-width: 920px;
+      line-height: 1.5;
+      opacity: .86;
     }
 
     .grid {
       display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 16px;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      margin-top: 18px;
     }
 
     .card {
@@ -32,52 +39,254 @@
 
     label {
       display: block;
-      margin: 12px 0;
+      margin: 14px 0;
       font-size: 14px;
     }
 
-    input {
+    input, textarea {
       width: 100%;
+      box-sizing: border-box;
+      margin-top: 6px;
     }
 
-    code, pre {
+    input[type="text"], textarea {
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.16);
+      color: white;
+      border-radius: 10px;
+      padding: 10px;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+
+    button, a.button {
+      display: inline-block;
+      margin: 8px 8px 8px 0;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 0;
+      color: #16051d;
+      background: #ffd1ff;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: rgba(255,255,255,.18);
+      color: white;
+    }
+
+    pre {
       white-space: pre-wrap;
+      word-break: break-word;
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.35);
       color: #ffd1ff;
+      max-height: 420px;
+      overflow: auto;
     }
 
-    a {
-      color: #ffd1ff;
+    .value {
+      opacity: .75;
+      font-variant-numeric: tabular-nums;
     }
   </style>
 </head>
+
 <body>
   <h1>SMKT Scene Viewer</h1>
-  <p>Безопасный viewer для будущей настройки сцены. Сейчас он не меняет production-сцену напрямую, чтобы не сломать статистику и target.</p>
+
+  <p class="notice">
+    Viewer меняет только draft-конфиг в твоём браузере. Production не меняется.
+    Чтобы увидеть изменения, нажми “Сохранить draft”, потом “Открыть preview AR”.
+    Preview откроется как <code>/8wall/?viewer=1</code>, и только в этом режиме сцена прочитает draft из localStorage.
+  </p>
 
   <p>
-    <a href="/8wall/">Открыть production AR scene</a>
+    <button id="save">Сохранить draft</button>
+    <button id="reset" class="secondary">Сбросить draft</button>
+    <button id="copy" class="secondary">Скопировать config</button>
+    <a id="preview" class="button" href="/8wall/?viewer=1" target="_blank">Открыть preview AR</a>
   </p>
 
   <div class="grid">
     <section class="card">
-      <h2>Planets</h2>
-      <label>Orbit radius X <input type="range" min="100" max="700" value="420"></label>
-      <label>Orbit radius Y <input type="range" min="100" max="500" value="250"></label>
-      <label>Base size <input type="range" min="5" max="80" value="20"></label>
-      <label>Speed <input type="range" min="0" max="200" value="42"></label>
+      <h2>Тексты</h2>
+      <label>Title line 1 <input id="titleLine1" type="text"></label>
+      <label>Title line 2 <input id="titleLine2" type="text"></label>
+      <label>Status text <input id="statusText" type="text"></label>
     </section>
 
     <section class="card">
-      <h2>Panel / Glow</h2>
-      <label>Panel opacity <input type="range" min="0" max="100" value="66"></label>
-      <label>Border opacity <input type="range" min="0" max="100" value="82"></label>
-      <label>Glow <input type="range" min="0" max="100" value="82"></label>
+      <h2>Фразы</h2>
+      <label>Каждая фраза с новой строки
+        <textarea id="phrases"></textarea>
+      </label>
     </section>
 
     <section class="card">
-      <h2>Next step</h2>
-      <p>Следующий коммит: подключить эти значения к <code>smkt-scene010.js</code> через отдельный <code>sceneConfig.js</code>, чтобы визуал менялся без правки статистики.</p>
+      <h2>Timing</h2>
+      <label>
+        Aura load duration <span class="value" id="auraLoadDurationMsValue"></span>
+        <input id="auraLoadDurationMs" type="range" min="1000" max="9000" step="100">
+      </label>
+
+      <label>
+        Firework duration <span class="value" id="fireworkDurationMsValue"></span>
+        <input id="fireworkDurationMs" type="range" min="500" max="6000" step="100">
+      </label>
+
+      <label>
+        Planets start delay <span class="value" id="planetsStartDelayMsValue"></span>
+        <input id="planetsStartDelayMs" type="range" min="0" max="6000" step="100">
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Metrics range</h2>
+      <label>
+        Min value <span class="value" id="metricMinValue"></span>
+        <input id="metricMin" type="range" min="0" max="100" step="1">
+      </label>
+
+      <label>
+        Max value <span class="value" id="metricMaxValue"></span>
+        <input id="metricMax" type="range" min="0" max="100" step="1">
+      </label>
     </section>
   </div>
+
+  <h2>Готовый config для вставки в repo</h2>
+  <pre id="output"></pre>
+
+  <script type="module">
+    import { DEFAULT_SCENE_CONFIG } from '../config/scene-config.js'
+
+    const STORAGE_KEY = 'smktSceneConfigDraft'
+
+    const el = (id) => document.getElementById(id)
+
+    function isPlainObject(value) {
+      return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+    }
+
+    function deepMerge(base, patch) {
+      const result = structuredClone(base)
+
+      for (const [key, value] of Object.entries(patch || {})) {
+        if (isPlainObject(value) && isPlainObject(result[key])) {
+          result[key] = deepMerge(result[key], value)
+        } else {
+          result[key] = value
+        }
+      }
+
+      return result
+    }
+
+    function loadConfig() {
+      const saved = localStorage.getItem(STORAGE_KEY)
+
+      if (!saved) {
+        return structuredClone(DEFAULT_SCENE_CONFIG)
+      }
+
+      try {
+        return deepMerge(DEFAULT_SCENE_CONFIG, JSON.parse(saved))
+      } catch {
+        return structuredClone(DEFAULT_SCENE_CONFIG)
+      }
+    }
+
+    const config = loadConfig()
+
+    function setInputValues() {
+      el('titleLine1').value = config.aura.titleLine1
+      el('titleLine2').value = config.aura.titleLine2
+      el('statusText').value = config.aura.statusText
+      el('phrases').value = config.aura.phrases.join('\n')
+
+      el('auraLoadDurationMs').value = config.timing.auraLoadDurationMs
+      el('fireworkDurationMs').value = config.timing.fireworkDurationMs
+      el('planetsStartDelayMs').value = config.timing.planetsStartDelayMs
+
+      const firstMetric = config.aura.metrics[0]
+      el('metricMin').value = firstMetric.min
+      el('metricMax').value = firstMetric.max
+    }
+
+    function readInputValues() {
+      config.aura.titleLine1 = el('titleLine1').value
+      config.aura.titleLine2 = el('titleLine2').value
+      config.aura.statusText = el('statusText').value
+
+      config.aura.phrases = el('phrases').value
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+
+      config.timing.auraLoadDurationMs = Number(el('auraLoadDurationMs').value)
+      config.timing.fireworkDurationMs = Number(el('fireworkDurationMs').value)
+      config.timing.planetsStartDelayMs = Number(el('planetsStartDelayMs').value)
+
+      const min = Number(el('metricMin').value)
+      const max = Number(el('metricMax').value)
+
+      config.aura.metrics = config.aura.metrics.map((metric) => ({
+        ...metric,
+        min,
+        max,
+      }))
+    }
+
+    function updateLabels() {
+      el('auraLoadDurationMsValue').textContent = `${config.timing.auraLoadDurationMs} ms`
+      el('fireworkDurationMsValue').textContent = `${config.timing.fireworkDurationMs} ms`
+      el('planetsStartDelayMsValue').textContent = `${config.timing.planetsStartDelayMs} ms`
+      el('metricMinValue').textContent = String(config.aura.metrics[0].min)
+      el('metricMaxValue').textContent = String(config.aura.metrics[0].max)
+    }
+
+    function configAsModuleText() {
+      return `export const DEFAULT_SCENE_CONFIG = ${JSON.stringify(config, null, 2)}\n`
+    }
+
+    function updateOutput() {
+      readInputValues()
+      updateLabels()
+      el('output').textContent = configAsModuleText()
+      el('preview').href = `/8wall/?viewer=1&ts=${Date.now()}`
+    }
+
+    document.querySelectorAll('input, textarea').forEach((input) => {
+      input.addEventListener('input', updateOutput)
+    })
+
+    el('save').addEventListener('click', () => {
+      readInputValues()
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
+      updateOutput()
+      alert('Draft сохранён. Теперь открой preview AR.')
+    })
+
+    el('reset').addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_KEY)
+      location.reload()
+    })
+
+    el('copy').addEventListener('click', async () => {
+      await navigator.clipboard.writeText(configAsModuleText())
+      alert('Config скопирован.')
+    })
+
+    setInputValues()
+    updateOutput()
+  </script>
 </body>
 </html>
