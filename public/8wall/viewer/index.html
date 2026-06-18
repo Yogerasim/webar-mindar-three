@@ -17,15 +17,19 @@
       margin-top: 0;
     }
 
+    code {
+      color: #ffd1ff;
+    }
+
     .notice {
-      max-width: 920px;
+      max-width: 980px;
       line-height: 1.5;
       opacity: .86;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 16px;
       margin-top: 18px;
     }
@@ -103,8 +107,8 @@
   <h1>SMKT Scene Viewer</h1>
 
   <p class="notice">
-    Viewer меняет только draft-конфиг в твоём браузере. Production не меняется.
-    Чтобы увидеть изменения, нажми “Сохранить draft”, потом “Открыть preview AR”.
+    Viewer меняет draft-конфиг только в твоём браузере. Production не меняется.
+    Чтобы увидеть изменения, нажми <b>Сохранить draft</b>, потом <b>Открыть preview AR</b>.
     Preview откроется как <code>/8wall/?viewer=1</code>, и только в этом режиме сцена прочитает draft из localStorage.
   </p>
 
@@ -132,33 +136,80 @@
 
     <section class="card">
       <h2>Timing</h2>
-      <label>
-        Aura load duration <span class="value" id="auraLoadDurationMsValue"></span>
-        <input id="auraLoadDurationMs" type="range" min="1000" max="9000" step="100">
-      </label>
-
-      <label>
-        Firework duration <span class="value" id="fireworkDurationMsValue"></span>
-        <input id="fireworkDurationMs" type="range" min="500" max="6000" step="100">
-      </label>
-
-      <label>
-        Planets start delay <span class="value" id="planetsStartDelayMsValue"></span>
-        <input id="planetsStartDelayMs" type="range" min="0" max="6000" step="100">
-      </label>
+      <label>Aura load duration <span class="value" id="auraLoadDurationMsValue"></span><input id="auraLoadDurationMs" type="range" min="1000" max="9000" step="100"></label>
+      <label>Firework duration <span class="value" id="fireworkDurationMsValue"></span><input id="fireworkDurationMs" type="range" min="500" max="6000" step="100"></label>
+      <label>Planets start delay <span class="value" id="planetsStartDelayMsValue"></span><input id="planetsStartDelayMs" type="range" min="0" max="6000" step="100"></label>
     </section>
 
     <section class="card">
       <h2>Metrics range</h2>
-      <label>
-        Min value <span class="value" id="metricMinValue"></span>
-        <input id="metricMin" type="range" min="0" max="100" step="1">
-      </label>
+      <label>Min value <span class="value" id="metricMinValue"></span><input id="metricMin" type="range" min="0" max="100" step="1"></label>
+      <label>Max value <span class="value" id="metricMaxValue"></span><input id="metricMax" type="range" min="0" max="100" step="1"></label>
+    </section>
 
-      <label>
-        Max value <span class="value" id="metricMaxValue"></span>
-        <input id="metricMax" type="range" min="0" max="100" step="1">
-      </label>
+    <section class="card">
+      <h2>Main panel</h2>
+      <label>X <span class="value" id="mainXValue"></span><input id="mainX" type="range" min="0" max="300" step="1"></label>
+      <label>Y <span class="value" id="mainYValue"></span><input id="mainY" type="range" min="0" max="300" step="1"></label>
+      <label>Width <span class="value" id="mainWValue"></span><input id="mainW" type="range" min="400" max="1024" step="1"></label>
+      <label>Height <span class="value" id="mainHValue"></span><input id="mainH" type="range" min="200" max="900" step="1"></label>
+      <label>Radius <span class="value" id="mainRValue"></span><input id="mainR" type="range" min="0" max="100" step="1"></label>
+      <label>Stroke width <span class="value" id="mainStrokeWidthValue"></span><input id="mainStrokeWidth" type="range" min="0" max="12" step="0.5"></label>
+    </section>
+
+    <section class="card">
+      <h2>Title layout</h2>
+      <label>Line 1 Y <span class="value" id="titleY1Value"></span><input id="titleY1" type="range" min="0" max="400" step="1"></label>
+      <label>Line 2 Y <span class="value" id="titleY2Value"></span><input id="titleY2" type="range" min="0" max="450" step="1"></label>
+      <label>Line 1 size <span class="value" id="titleSize1Value"></span><input id="titleSize1" type="range" min="10" max="120" step="1"></label>
+      <label>Line 2 size <span class="value" id="titleSize2Value"></span><input id="titleSize2" type="range" min="10" max="100" step="1"></label>
+    </section>
+
+    <section class="card">
+      <h2>Metrics layout</h2>
+      <label>Start Y <span class="value" id="metricsStartYValue"></span><input id="metricsStartY" type="range" min="100" max="700" step="1"></label>
+      <label>Gap <span class="value" id="metricsGapValue"></span><input id="metricsGap" type="range" min="20" max="140" step="1"></label>
+      <label>Label X <span class="value" id="metricsLabelXValue"></span><input id="metricsLabelX" type="range" min="0" max="500" step="1"></label>
+      <label>Bar X <span class="value" id="metricsBarXValue"></span><input id="metricsBarX" type="range" min="0" max="800" step="1"></label>
+      <label>Bar width <span class="value" id="metricsBarWValue"></span><input id="metricsBarW" type="range" min="80" max="700" step="1"></label>
+      <label>Value X <span class="value" id="metricsValueXValue"></span><input id="metricsValueX" type="range" min="300" max="1000" step="1"></label>
+      <label>Label size <span class="value" id="metricsLabelSizeValue"></span><input id="metricsLabelSize" type="range" min="10" max="70" step="1"></label>
+      <label>Value size <span class="value" id="metricsValueSizeValue"></span><input id="metricsValueSize" type="range" min="10" max="80" step="1"></label>
+    </section>
+
+    <section class="card">
+      <h2>Phrase block</h2>
+      <label>X <span class="value" id="phraseXValue"></span><input id="phraseX" type="range" min="0" max="500" step="1"></label>
+      <label>Y <span class="value" id="phraseYValue"></span><input id="phraseY" type="range" min="300" max="950" step="1"></label>
+      <label>Width <span class="value" id="phraseWValue"></span><input id="phraseW" type="range" min="200" max="1024" step="1"></label>
+      <label>Height <span class="value" id="phraseHValue"></span><input id="phraseH" type="range" min="40" max="350" step="1"></label>
+      <label>Text Y <span class="value" id="phraseTextYValue"></span><input id="phraseTextY" type="range" min="300" max="1000" step="1"></label>
+      <label>Font size <span class="value" id="phraseFontSizeValue"></span><input id="phraseFontSize" type="range" min="10" max="80" step="1"></label>
+      <label>Line height <span class="value" id="phraseLineHeightValue"></span><input id="phraseLineHeight" type="range" min="12" max="100" step="1"></label>
+    </section>
+
+    <section class="card">
+      <h2>Planets / orbit</h2>
+      <label>Center X <span class="value" id="planetsCxValue"></span><input id="planetsCx" type="range" min="0" max="1024" step="1"></label>
+      <label>Center Y <span class="value" id="planetsCyValue"></span><input id="planetsCy" type="range" min="0" max="1024" step="1"></label>
+      <label>Radius X <span class="value" id="planetsRxValue"></span><input id="planetsRx" type="range" min="0" max="900" step="1"></label>
+      <label>Radius Y <span class="value" id="planetsRyValue"></span><input id="planetsRy" type="range" min="0" max="700" step="1"></label>
+      <label>Base size <span class="value" id="planetsBaseSizeValue"></span><input id="planetsBaseSize" type="range" min="1" max="80" step="1"></label>
+      <label>Speed <span class="value" id="planetsSpeedValue"></span><input id="planetsSpeed" type="range" min="0" max="2" step="0.01"></label>
+    </section>
+
+    <section class="card">
+      <h2>Colors / opacity</h2>
+      <label>Main gradient 1 <input id="mainGradient0" type="text"></label>
+      <label>Main gradient 2 <input id="mainGradient1" type="text"></label>
+      <label>Main gradient 3 <input id="mainGradient2" type="text"></label>
+      <label>Main stroke <input id="mainStrokeStyle" type="text"></label>
+      <label>Glow start <input id="glowColorStart" type="text"></label>
+      <label>Glow end <input id="glowColorEnd" type="text"></label>
+      <label>Title color 1 <input id="titleColor1" type="text"></label>
+      <label>Title color 2 <input id="titleColor2" type="text"></label>
+      <label>Phrase fill <input id="phraseFillStyle" type="text"></label>
+      <label>Phrase text <input id="phraseTextColor" type="text"></label>
     </section>
   </div>
 
@@ -169,7 +220,6 @@
     import { DEFAULT_SCENE_CONFIG } from '../config/scene-config.js'
 
     const STORAGE_KEY = 'smktSceneConfigDraft'
-
     const el = (id) => document.getElementById(id)
 
     function isPlainObject(value) {
@@ -193,9 +243,7 @@
     function loadConfig() {
       const saved = localStorage.getItem(STORAGE_KEY)
 
-      if (!saved) {
-        return structuredClone(DEFAULT_SCENE_CONFIG)
-      }
+      if (!saved) return structuredClone(DEFAULT_SCENE_CONFIG)
 
       try {
         return deepMerge(DEFAULT_SCENE_CONFIG, JSON.parse(saved))
@@ -206,19 +254,78 @@
 
     const config = loadConfig()
 
+    function setValue(id, value) {
+      el(id).value = value
+    }
+
+    function getNumber(id) {
+      return Number(el(id).value)
+    }
+
+    function setLabel(id, value) {
+      const node = el(`${id}Value`)
+      if (node) node.textContent = String(value)
+    }
+
     function setInputValues() {
-      el('titleLine1').value = config.aura.titleLine1
-      el('titleLine2').value = config.aura.titleLine2
-      el('statusText').value = config.aura.statusText
-      el('phrases').value = config.aura.phrases.join('\n')
+      setValue('titleLine1', config.aura.titleLine1)
+      setValue('titleLine2', config.aura.titleLine2)
+      setValue('statusText', config.aura.statusText)
+      setValue('phrases', config.aura.phrases.join('\n'))
 
-      el('auraLoadDurationMs').value = config.timing.auraLoadDurationMs
-      el('fireworkDurationMs').value = config.timing.fireworkDurationMs
-      el('planetsStartDelayMs').value = config.timing.planetsStartDelayMs
+      setValue('auraLoadDurationMs', config.timing.auraLoadDurationMs)
+      setValue('fireworkDurationMs', config.timing.fireworkDurationMs)
+      setValue('planetsStartDelayMs', config.timing.planetsStartDelayMs)
 
-      const firstMetric = config.aura.metrics[0]
-      el('metricMin').value = firstMetric.min
-      el('metricMax').value = firstMetric.max
+      setValue('metricMin', config.aura.metrics[0].min)
+      setValue('metricMax', config.aura.metrics[0].max)
+
+      setValue('mainX', config.panel2d.main.x)
+      setValue('mainY', config.panel2d.main.y)
+      setValue('mainW', config.panel2d.main.w)
+      setValue('mainH', config.panel2d.main.h)
+      setValue('mainR', config.panel2d.main.r)
+      setValue('mainStrokeWidth', config.panel2d.main.strokeWidth)
+
+      setValue('titleY1', config.panel2d.title.y1)
+      setValue('titleY2', config.panel2d.title.y2)
+      setValue('titleSize1', config.panel2d.title.size1)
+      setValue('titleSize2', config.panel2d.title.size2)
+
+      setValue('metricsStartY', config.panel2d.metrics.startY)
+      setValue('metricsGap', config.panel2d.metrics.gap)
+      setValue('metricsLabelX', config.panel2d.metrics.labelX)
+      setValue('metricsBarX', config.panel2d.metrics.barX)
+      setValue('metricsBarW', config.panel2d.metrics.barW)
+      setValue('metricsValueX', config.panel2d.metrics.valueX)
+      setValue('metricsLabelSize', config.panel2d.metrics.labelSize)
+      setValue('metricsValueSize', config.panel2d.metrics.valueSize)
+
+      setValue('phraseX', config.panel2d.phrase.x)
+      setValue('phraseY', config.panel2d.phrase.y)
+      setValue('phraseW', config.panel2d.phrase.w)
+      setValue('phraseH', config.panel2d.phrase.h)
+      setValue('phraseTextY', config.panel2d.phrase.textY)
+      setValue('phraseFontSize', config.panel2d.phrase.fontSize)
+      setValue('phraseLineHeight', config.panel2d.phrase.lineHeight)
+
+      setValue('planetsCx', config.panel2d.planets.cx)
+      setValue('planetsCy', config.panel2d.planets.cy)
+      setValue('planetsRx', config.panel2d.planets.rx)
+      setValue('planetsRy', config.panel2d.planets.ry)
+      setValue('planetsBaseSize', config.panel2d.planets.baseSize)
+      setValue('planetsSpeed', config.panel2d.planets.speed)
+
+      setValue('mainGradient0', config.panel2d.main.gradient[0])
+      setValue('mainGradient1', config.panel2d.main.gradient[1])
+      setValue('mainGradient2', config.panel2d.main.gradient[2])
+      setValue('mainStrokeStyle', config.panel2d.main.strokeStyle)
+      setValue('glowColorStart', config.panel2d.glow.colorStart)
+      setValue('glowColorEnd', config.panel2d.glow.colorEnd)
+      setValue('titleColor1', config.panel2d.title.color1)
+      setValue('titleColor2', config.panel2d.title.color2)
+      setValue('phraseFillStyle', config.panel2d.phrase.fillStyle)
+      setValue('phraseTextColor', config.panel2d.phrase.textColor)
     }
 
     function readInputValues() {
@@ -231,26 +338,74 @@
         .map((line) => line.trim())
         .filter(Boolean)
 
-      config.timing.auraLoadDurationMs = Number(el('auraLoadDurationMs').value)
-      config.timing.fireworkDurationMs = Number(el('fireworkDurationMs').value)
-      config.timing.planetsStartDelayMs = Number(el('planetsStartDelayMs').value)
+      config.timing.auraLoadDurationMs = getNumber('auraLoadDurationMs')
+      config.timing.fireworkDurationMs = getNumber('fireworkDurationMs')
+      config.timing.planetsStartDelayMs = getNumber('planetsStartDelayMs')
 
-      const min = Number(el('metricMin').value)
-      const max = Number(el('metricMax').value)
+      const min = getNumber('metricMin')
+      const max = getNumber('metricMax')
+      config.aura.metrics = config.aura.metrics.map((metric) => ({ ...metric, min, max }))
 
-      config.aura.metrics = config.aura.metrics.map((metric) => ({
-        ...metric,
-        min,
-        max,
-      }))
+      config.panel2d.main.x = getNumber('mainX')
+      config.panel2d.main.y = getNumber('mainY')
+      config.panel2d.main.w = getNumber('mainW')
+      config.panel2d.main.h = getNumber('mainH')
+      config.panel2d.main.r = getNumber('mainR')
+      config.panel2d.main.strokeWidth = getNumber('mainStrokeWidth')
+
+      config.panel2d.title.y1 = getNumber('titleY1')
+      config.panel2d.title.y2 = getNumber('titleY2')
+      config.panel2d.title.size1 = getNumber('titleSize1')
+      config.panel2d.title.size2 = getNumber('titleSize2')
+
+      config.panel2d.metrics.startY = getNumber('metricsStartY')
+      config.panel2d.metrics.gap = getNumber('metricsGap')
+      config.panel2d.metrics.labelX = getNumber('metricsLabelX')
+      config.panel2d.metrics.barX = getNumber('metricsBarX')
+      config.panel2d.metrics.barW = getNumber('metricsBarW')
+      config.panel2d.metrics.valueX = getNumber('metricsValueX')
+      config.panel2d.metrics.labelSize = getNumber('metricsLabelSize')
+      config.panel2d.metrics.valueSize = getNumber('metricsValueSize')
+
+      config.panel2d.phrase.x = getNumber('phraseX')
+      config.panel2d.phrase.y = getNumber('phraseY')
+      config.panel2d.phrase.w = getNumber('phraseW')
+      config.panel2d.phrase.h = getNumber('phraseH')
+      config.panel2d.phrase.textY = getNumber('phraseTextY')
+      config.panel2d.phrase.fontSize = getNumber('phraseFontSize')
+      config.panel2d.phrase.lineHeight = getNumber('phraseLineHeight')
+
+      config.panel2d.planets.cx = getNumber('planetsCx')
+      config.panel2d.planets.cy = getNumber('planetsCy')
+      config.panel2d.planets.rx = getNumber('planetsRx')
+      config.panel2d.planets.ry = getNumber('planetsRy')
+      config.panel2d.planets.baseSize = getNumber('planetsBaseSize')
+      config.panel2d.planets.speed = getNumber('planetsSpeed')
+
+      config.panel2d.main.gradient[0] = el('mainGradient0').value
+      config.panel2d.main.gradient[1] = el('mainGradient1').value
+      config.panel2d.main.gradient[2] = el('mainGradient2').value
+      config.panel2d.main.strokeStyle = el('mainStrokeStyle').value
+      config.panel2d.glow.colorStart = el('glowColorStart').value
+      config.panel2d.glow.colorEnd = el('glowColorEnd').value
+      config.panel2d.title.color1 = el('titleColor1').value
+      config.panel2d.title.color2 = el('titleColor2').value
+      config.panel2d.phrase.fillStyle = el('phraseFillStyle').value
+      config.panel2d.phrase.textColor = el('phraseTextColor').value
     }
 
     function updateLabels() {
-      el('auraLoadDurationMsValue').textContent = `${config.timing.auraLoadDurationMs} ms`
-      el('fireworkDurationMsValue').textContent = `${config.timing.fireworkDurationMs} ms`
-      el('planetsStartDelayMsValue').textContent = `${config.timing.planetsStartDelayMs} ms`
-      el('metricMinValue').textContent = String(config.aura.metrics[0].min)
-      el('metricMaxValue').textContent = String(config.aura.metrics[0].max)
+      const ids = [
+        'auraLoadDurationMs', 'fireworkDurationMs', 'planetsStartDelayMs',
+        'metricMin', 'metricMax',
+        'mainX', 'mainY', 'mainW', 'mainH', 'mainR', 'mainStrokeWidth',
+        'titleY1', 'titleY2', 'titleSize1', 'titleSize2',
+        'metricsStartY', 'metricsGap', 'metricsLabelX', 'metricsBarX', 'metricsBarW', 'metricsValueX', 'metricsLabelSize', 'metricsValueSize',
+        'phraseX', 'phraseY', 'phraseW', 'phraseH', 'phraseTextY', 'phraseFontSize', 'phraseLineHeight',
+        'planetsCx', 'planetsCy', 'planetsRx', 'planetsRy', 'planetsBaseSize', 'planetsSpeed',
+      ]
+
+      ids.forEach((id) => setLabel(id, el(id).value))
     }
 
     function configAsModuleText() {
