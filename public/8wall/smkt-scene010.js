@@ -390,51 +390,7 @@ function createPanel() {
   const mesh = new THREE.Mesh(geometry, material)
   mesh.position.set(0, 0, 0.02)
 
-  // Главный конфиг визуала. Его потом можно крутить руками:
-  // x/y/w/h — позиции и размеры на canvas 1024x1024.
-  const UI = {
-    main: {
-      x: 92,
-      y: 62,
-      w: 840,
-      h: 500,
-      r: 38,
-    },
-    title: {
-      y1: 145,
-      y2: 197,
-      size1: 58,
-      size2: 42,
-    },
-    metrics: {
-      startY: 270,
-      gap: 68,
-      labelX: 150,
-      barX: 340,
-      barW: 350,
-      valueX: 830,
-      barH: 22,
-      labelSize: 27,
-      valueSize: 30,
-    },
-    phrase: {
-      x: 118,
-      y: 610,
-      w: 788,
-      h: 116,
-      r: 32,
-      textY: 658,
-      fontSize: 29,
-    },
-    planets: {
-      cx: 512,
-      cy: 392,
-      rx: 510,
-      ry: 310,
-      baseSize: 22,
-      speed: 0.42,
-    },
-  }
+  const UI = SCENE_CONFIG.panel2d
 
   const starSeeds = Array.from({ length: 70 }, (_, i) => {
     const a = Math.sin(i * 999.13) * 10000
@@ -491,31 +447,31 @@ function createPanel() {
       // Основная карточка: только заголовок и муды
       const main = UI.main
       const mainGradient = ctx.createLinearGradient(main.x, main.y, main.x + main.w, main.y + main.h)
-      mainGradient.addColorStop(0, 'rgba(255, 76, 205, 0.27)')
-      mainGradient.addColorStop(0.5, 'rgba(138, 84, 255, 0.21)')
-      mainGradient.addColorStop(1, 'rgba(57, 210, 255, 0.16)')
+      mainGradient.addColorStop(0, UI.main.gradient[0])
+      mainGradient.addColorStop(0.5, UI.main.gradient[1])
+      mainGradient.addColorStop(1, UI.main.gradient[2])
 
       roundRect(ctx, main.x, main.y, main.w, main.h, main.r)
       ctx.fillStyle = mainGradient
       ctx.fill()
 
-      ctx.lineWidth = 3
-      ctx.strokeStyle = 'rgba(255, 215, 255, 0.82)'
+      ctx.lineWidth = UI.main.strokeWidth
+      ctx.strokeStyle = UI.main.strokeStyle
       ctx.stroke()
 
       const glow = ctx.createRadialGradient(cx, main.y + 155, 10, cx, main.y + 180, 470)
-      glow.addColorStop(0, 'rgba(255, 86, 205, 0.22)')
-      glow.addColorStop(1, 'rgba(255, 86, 205, 0)')
+      glow.addColorStop(0, UI.glow.colorStart)
+      glow.addColorStop(1, UI.glow.colorEnd)
       ctx.fillStyle = glow
       ctx.fillRect(main.x - 90, main.y - 90, main.w + 180, main.h + 180)
 
       ctx.textAlign = 'center'
-      ctx.fillStyle = '#ffffff'
+      ctx.fillStyle = UI.title.color1
       ctx.font = `800 ${UI.title.size1}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
       ctx.fillText(SCENE_CONFIG.aura.titleLine1, cx, UI.title.y1)
 
       ctx.font = `800 ${UI.title.size2}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-      ctx.fillStyle = 'rgba(255, 224, 255, 0.96)'
+      ctx.fillStyle = UI.title.color2
       ctx.fillText(SCENE_CONFIG.aura.titleLine2, cx, UI.title.y2)
 
       // Метрики: отдельные зоны для названия, шкалы и процентов
@@ -537,20 +493,20 @@ function createPanel() {
 
         ctx.textAlign = 'left'
         ctx.font = `700 ${m.labelSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-        ctx.fillStyle = i === 0 ? 'rgba(255, 245, 255, 1)' : 'rgba(240, 226, 255, 0.94)'
+        ctx.fillStyle = i === 0 ? m.labelColorFirst : m.labelColorOther
         ctx.fillText(metric.label || metric.name || 'Муд', m.labelX, y + 8)
 
         // фон шкалы
         roundRect(ctx, m.barX, y - 13, m.barW, m.barH, 14)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'
+        ctx.fillStyle = m.barBg
         ctx.fill()
 
         // заполнение шкалы
         const fillW = Math.max(0, m.barW * p)
         const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
-        barGradient.addColorStop(0, '#ff68df')
-        barGradient.addColorStop(0.55, '#b079ff')
-        barGradient.addColorStop(1, '#67e8ff')
+        barGradient.addColorStop(0, m.barGradient[0])
+        barGradient.addColorStop(0.55, m.barGradient[1])
+        barGradient.addColorStop(1, m.barGradient[2])
 
         roundRect(ctx, m.barX, y - 13, fillW, m.barH, 14)
         ctx.fillStyle = barGradient
@@ -559,13 +515,13 @@ function createPanel() {
         // проценты справа, отдельно от шкалы
         ctx.textAlign = 'right'
         ctx.font = `800 ${m.valueSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.98)'
+        ctx.fillStyle = m.valueColor
         ctx.fillText(`${value}%`, m.valueX, y + 10)
 
         if (p > 0.05 && p < 1) {
           const sparkX = m.barX + fillW
           ctx.beginPath()
-          ctx.fillStyle = 'rgba(255,255,255,0.88)'
+          ctx.fillStyle = m.sparkColor
           ctx.arc(sparkX, y - 2, 4.5 + 2 * Math.sin(elapsed * 3.5 + i), 0, Math.PI * 2)
           ctx.fill()
         }
@@ -576,11 +532,11 @@ function createPanel() {
       // Отдельная нижняя рамка для фразы. Она НЕ внутри основной карточки.
       const phrase = UI.phrase
       roundRect(ctx, phrase.x, phrase.y, phrase.w, phrase.h, phrase.r)
-      ctx.fillStyle = 'rgba(20, 8, 38, 0.42)'
+      ctx.fillStyle = phrase.fillStyle
       ctx.fill()
 
       ctx.lineWidth = 2.5
-      ctx.strokeStyle = loaded ? 'rgba(255, 225, 255, 0.94)' : 'rgba(255, 225, 255, 0.38)'
+      ctx.strokeStyle = loaded ? phrase.strokeLoaded : phrase.strokeLoading
       ctx.stroke()
 
       // Пять фейерверков по очереди
@@ -622,9 +578,9 @@ function createPanel() {
         ctx.save()
         ctx.globalAlpha = alpha * phraseAlpha
         ctx.textAlign = 'center'
-        ctx.fillStyle = 'rgba(255,255,255,0.98)'
+        ctx.fillStyle = phrase.textColor
         ctx.font = `700 ${phrase.fontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-        wrapText(ctx, auraData.phrase || '', cx, phrase.textY, phrase.w - 80, 34)
+        wrapText(ctx, auraData.phrase || '', cx, phrase.textY, phrase.w - 80, phrase.lineHeight)
         ctx.restore()
       }
 
