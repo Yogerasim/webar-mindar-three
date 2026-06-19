@@ -529,13 +529,13 @@
       const targetCandidates = getTargetCandidates()
 
       if (!targetCandidates[index]) {
-        drawScenePreview()
+        safeDrawScenePreview()
         return
       }
 
       targetImage.onload = () => {
         targetImageLoaded = true
-        drawScenePreview()
+        safeDrawScenePreview()
       }
 
       targetImage.onerror = () => {
@@ -595,7 +595,7 @@
         ctx.globalAlpha = 0.72
         ctx.save()
         ctx.translate(512, 512)
-        ctx.rotate(((cfg.target?.previewRotationDeg || 0) * Math.PI) / 180)
+        ctx.rotate(((config.target?.previewRotationDeg || 0) * Math.PI) / 180)
         ctx.drawImage(targetImage, -w / 2, -h / 2, w, h)
         ctx.restore()
       } else {
@@ -955,7 +955,7 @@
       const previewUrl = getPreviewUrl()
       el('preview').href = previewUrl
       if (el('openPreviewLarge')) el('openPreviewLarge').href = previewUrl
-      drawScenePreview()
+      safeDrawScenePreview()
     }
 
     document.querySelectorAll('input, textarea').forEach((input) => {
