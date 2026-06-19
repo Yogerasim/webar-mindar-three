@@ -100,10 +100,125 @@
       opacity: .75;
       font-variant-numeric: tabular-nums;
     }
+
+    .viewer-layout {
+      display: grid;
+      grid-template-columns: minmax(520px, 1fr) 460px;
+      gap: 18px;
+      height: calc(100vh - 48px);
+    }
+
+    .preview-panel {
+      position: sticky;
+      top: 24px;
+      height: calc(100vh - 48px);
+      min-height: 640px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 24px;
+      overflow: hidden;
+      background: rgba(0,0,0,.35);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-toolbar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+    }
+
+    .preview-toolbar-title {
+      font-weight: 800;
+      color: #ffd1ff;
+    }
+
+    .preview-frame-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255, 76, 205, .15), transparent 42%),
+        #050208;
+    }
+
+    #previewFrame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #000;
+    }
+
+    .settings-panel {
+      height: calc(100vh - 48px);
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .settings-panel::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .settings-panel::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,.25);
+      border-radius: 999px;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 14px;
+      }
+
+      .viewer-layout {
+        display: block;
+        height: auto;
+      }
+
+      .preview-panel {
+        position: relative;
+        top: 0;
+        height: 72vh;
+        min-height: 520px;
+        margin-bottom: 18px;
+      }
+
+      .settings-panel {
+        height: auto;
+        overflow: visible;
+      }
+    }
+
   </style>
 </head>
 
 <body>
+  <main class="viewer-layout">
+    <section class="preview-panel">
+      <div class="preview-toolbar">
+        <div>
+          <div class="preview-toolbar-title">AR Preview</div>
+          <div style="opacity:.72;font-size:13px;">/8wall/?viewer=1&dev=1</div>
+        </div>
+        <div>
+          <button id="refreshPreview" class="secondary" type="button">Обновить preview</button>
+          <a id="openPreviewLarge" class="button" href="/8wall/?viewer=1&dev=1" target="_blank">Открыть отдельно</a>
+        </div>
+      </div>
+      <div class="preview-frame-wrap">
+        <iframe
+          id="previewFrame"
+          src="/8wall/?viewer=1&dev=1"
+          allow="camera; microphone; fullscreen; xr-spatial-tracking"
+          allowfullscreen
+        ></iframe>
+      </div>
+    </section>
+
+    <aside class="settings-panel">
   <h1>SMKT Scene Viewer</h1>
 
   <p class="notice">
@@ -116,7 +231,7 @@
     <button id="save">Сохранить draft</button>
     <button id="reset" class="secondary">Сбросить draft</button>
     <button id="copy" class="secondary">Скопировать config</button>
-    <a id="preview" class="button" href="/8wall/?viewer=1" target="_blank">Открыть preview AR</a>
+    <a id="preview" class="button" href="/8wall/?viewer=1&dev=1" target="_blank">Открыть preview AR</a>
   </p>
 
   <div class="grid">
@@ -216,11 +331,27 @@
   <h2>Готовый config для вставки в repo</h2>
   <pre id="output"></pre>
 
+    </aside>
+  </main>
+
   <script type="module">
     import { DEFAULT_SCENE_CONFIG } from '../config/scene-config.js'
 
     const STORAGE_KEY = 'smktSceneConfigDraft'
     const el = (id) => document.getElementById(id)
+    const previewFrame = el('previewFrame')
+
+
+    function getPreviewUrl() {
+      return `/8wall/?viewer=1&dev=1&ts=${Date.now()}`
+    }
+
+    function refreshPreview() {
+      const url = getPreviewUrl()
+      if (previewFrame) previewFrame.src = url
+      if (el('preview')) el('preview').href = url
+      if (el('openPreviewLarge')) el('openPreviewLarge').href = url
+    }
 
     function isPlainObject(value) {
       return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
@@ -416,7 +547,9 @@
       readInputValues()
       updateLabels()
       el('output').textContent = configAsModuleText()
-      el('preview').href = `/8wall/?viewer=1&ts=${Date.now()}`
+      const previewUrl = getPreviewUrl()
+      el('preview').href = previewUrl
+      if (el('openPreviewLarge')) el('openPreviewLarge').href = previewUrl
     }
 
     document.querySelectorAll('input, textarea').forEach((input) => {
@@ -427,8 +560,11 @@
       readInputValues()
       localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
       updateOutput()
-      alert('Draft сохранён. Теперь открой preview AR.')
+      refreshPreview()
+      alert('Draft сохранён. Preview обновлён.')
     })
+
+    el('refreshPreview').addEventListener('click', refreshPreview)
 
     el('reset').addEventListener('click', () => {
       localStorage.removeItem(STORAGE_KEY)
