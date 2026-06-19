@@ -208,7 +208,23 @@
       box-sizing: border-box;
     }
 
-  </style>
+  
+    /* TARGET_RATIO_PREVIEW_FIX */
+    #scenePreview {
+      aspect-ratio: var(--target-aspect, 1 / 1);
+      width: min(100%, calc(100vh - 120px));
+      height: auto;
+      max-height: calc(100vh - 120px);
+      object-fit: contain;
+      background: transparent;
+    }
+
+    .preview-frame-wrap {
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+        </style>
 </head>
 
 <body>
@@ -411,6 +427,7 @@
 
       targetImage.onload = () => {
         targetImageLoaded = true
+        setupScenePreviewCanvasFromTargetImage()
         drawScenePreview()
       }
 
@@ -420,6 +437,39 @@
 
       targetImage.src = targetCandidates[index]
     }
+
+
+    function setupScenePreviewCanvasFromTargetImage() {
+      if (!scenePreview || !targetImageLoaded || !targetImage?.width || !targetImage?.height) return
+
+      const rotationDeg = Number(config?.target?.previewRotationDeg ?? -90)
+      const rotated = Math.abs(rotationDeg) % 180 === 90
+
+      const targetW = rotated ? targetImage.height : targetImage.width
+      const targetH = rotated ? targetImage.width : targetImage.height
+
+      scenePreview.width = targetW
+      scenePreview.height = targetH
+      scenePreview.style.setProperty('--target-aspect', `${targetW} / ${targetH}`)
+
+      console.log('[viewer] target ratio canvas:', {
+        sourceWidth: targetImage.width,
+        sourceHeight: targetImage.height,
+        rotationDeg,
+        canvasWidth: targetW,
+        canvasHeight: targetH,
+        aspect: targetW / targetH
+      })
+    }
+
+    function getSceneScaleX() {
+      return scenePreview ? scenePreview.width / 1024 : 1
+    }
+
+    function getSceneScaleY() {
+      return scenePreview ? scenePreview.height / 1024 : 1
+    }
+
 
     function roundRectPreview(ctx, x, y, w, h, r) {
       ctx.beginPath()
@@ -459,7 +509,7 @@
     function drawTargetBackground(ctx) {
       ctx.save()
       ctx.fillStyle = '#100716'
-      ctx.fillRect(0, 0, 1024, 1024)
+      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
 
       if (targetImageLoaded) {
         const rotationDeg = -90
@@ -481,15 +531,15 @@
         ctx.strokeStyle = 'rgba(255,255,255,.22)'
         ctx.lineWidth = 1
 
-        for (let i = 0; i <= 1024; i += 64) {
+        for (let i = 0; i <= Math.max(ctx.canvas.width, ctx.canvas.height); i += 64) {
           ctx.beginPath()
           ctx.moveTo(i, 0)
-          ctx.lineTo(i, 1024)
+          ctx.lineTo(i, ctx.canvas.height)
           ctx.stroke()
 
           ctx.beginPath()
           ctx.moveTo(0, i)
-          ctx.lineTo(1024, i)
+          ctx.lineTo(ctx.canvas.width, i)
           ctx.stroke()
         }
 
@@ -497,13 +547,13 @@
         ctx.fillStyle = 'rgba(255,255,255,.55)'
         ctx.font = '700 28px system-ui'
         ctx.textAlign = 'center'
-        ctx.fillText('TARGET PREVIEW', 512, 512)
+        ctx.fillText('TARGET PREVIEW', ctx.canvas.width / 2, ctx.canvas.height / 2)
       }
 
       ctx.globalAlpha = 1
       ctx.strokeStyle = 'rgba(255, 209, 255, .8)'
       ctx.lineWidth = 3
-      ctx.strokeRect(2, 2, 1020, 1020)
+      ctx.strokeRect(2, 2, ctx.canvas.width - 4, ctx.canvas.height - 4)
 
       ctx.restore()
     }
@@ -540,10 +590,11 @@
       const UI = getPanel2dRuntimeConfig(cfg.panel2d)
       const cx = 512
 
-      ctx.clearRect(0, 0, 1024, 1024)
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
       drawTargetBackground(ctx)
 
       ctx.save()
+      ctx.scale(getSceneScaleX(), getSceneScaleY())
 
       const main = UI.main
       const mainGradient = ctx.createLinearGradient(main.x, main.y, main.x + main.w, main.y + main.h)
