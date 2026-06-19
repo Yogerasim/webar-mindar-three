@@ -275,6 +275,7 @@
 
     <section class="card">
       <h2>Main panel</h2>
+      <label>Whole scene Y offset <span class="value" id="panelOffsetYValue"></span><input id="panelOffsetY" type="range" min="-800" max="1200" step="1"></label>
       <label>X <span class="value" id="mainXValue"></span><input id="mainX" type="range" min="0" max="300" step="1"></label>
       <label>Y <span class="value" id="mainYValue"></span><input id="mainY" type="range" min="0" max="300" step="1"></label>
       <label>Width <span class="value" id="mainWValue"></span><input id="mainW" type="range" min="400" max="1024" step="1"></label>
@@ -387,15 +388,22 @@
     const targetImage = new Image()
     let targetImageLoaded = false
 
-    const targetCandidates = [
-      '../image-targets/waves.png',
-      '../image-targets/waves.jpg',
-      '../image-targets/waves.jpeg',
-      '../image-targets/waves.webp',
-      '../image-targets/waves.svg',
-    ]
+    function getTargetCandidates() {
+      const configured = config?.target?.previewImage
+
+      return [
+        configured,
+        '../image-targets/waves.png',
+        '../image-targets/waves.jpg',
+        '../image-targets/waves.jpeg',
+        '../image-targets/waves.webp',
+        '../image-targets/waves.svg',
+      ].filter(Boolean)
+    }
 
     function loadTargetImage(index = 0) {
+      const targetCandidates = getTargetCandidates()
+
       if (!targetCandidates[index]) {
         drawScenePreview()
         return
@@ -494,6 +502,28 @@
       ctx.restore()
     }
 
+
+    function clonePanel2dConfig(panel2d) {
+      return structuredClone(panel2d)
+    }
+
+    function getPanel2dRuntimeConfig(panel2d) {
+      const ui = clonePanel2dConfig(panel2d)
+      const offsetY = Number(ui.offsetY || 0)
+
+      if (!offsetY) return ui
+
+      ui.main.y += offsetY
+      ui.title.y1 += offsetY
+      ui.title.y2 += offsetY
+      ui.metrics.startY += offsetY
+      ui.phrase.y += offsetY
+      ui.phrase.textY += offsetY
+      ui.planets.cy += offsetY
+
+      return ui
+    }
+
     function drawScenePreview() {
       if (!scenePreviewCtx) return
 
@@ -501,7 +531,7 @@
 
       const ctx = scenePreviewCtx
       const cfg = config
-      const UI = cfg.panel2d
+      const UI = getPanel2dRuntimeConfig(cfg.panel2d)
       const cx = 512
 
       ctx.clearRect(0, 0, 1024, 1024)
@@ -648,6 +678,7 @@
       setValue('metricMin', config.aura.metrics[0].min)
       setValue('metricMax', config.aura.metrics[0].max)
 
+      setValue('panelOffsetY', config.panel2d.offsetY || 0)
       setValue('mainX', config.panel2d.main.x)
       setValue('mainY', config.panel2d.main.y)
       setValue('mainW', config.panel2d.main.w)
@@ -714,6 +745,7 @@
       const max = getNumber('metricMax')
       config.aura.metrics = config.aura.metrics.map((metric) => ({ ...metric, min, max }))
 
+      config.panel2d.offsetY = getNumber('panelOffsetY')
       config.panel2d.main.x = getNumber('mainX')
       config.panel2d.main.y = getNumber('mainY')
       config.panel2d.main.w = getNumber('mainW')
@@ -766,7 +798,7 @@
       const ids = [
         'auraLoadDurationMs', 'fireworkDurationMs', 'planetsStartDelayMs',
         'metricMin', 'metricMax',
-        'mainX', 'mainY', 'mainW', 'mainH', 'mainR', 'mainStrokeWidth',
+        'panelOffsetY', 'mainX', 'mainY', 'mainW', 'mainH', 'mainR', 'mainStrokeWidth',
         'titleY1', 'titleY2', 'titleSize1', 'titleSize2',
         'metricsStartY', 'metricsGap', 'metricsLabelX', 'metricsBarX', 'metricsBarW', 'metricsValueX', 'metricsLabelSize', 'metricsValueSize',
         'phraseX', 'phraseY', 'phraseW', 'phraseH', 'phraseTextY', 'phraseFontSize', 'phraseLineHeight',
