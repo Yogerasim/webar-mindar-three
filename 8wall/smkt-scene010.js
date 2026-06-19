@@ -1,16 +1,87 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { DEFAULT_SCENE_CONFIG } from './config/scene-config.js'
 
 window.THREE = THREE
 
-const TARGET_NAME = 'waves'
-const TARGET_JSON = './image-targets/waves.json'
-const SPHERES_GLB = './assets/models/spheres.glb'
+function isPlainObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
 
-const AURA_APPEAR_DELAY_MS = 0
-const AURA_LOAD_DURATION_MS = 4300
-const FIREWORK_DURATION_MS = 2200
-const PLANETS_START_DELAY_MS = 2200
+function deepMerge(base, patch) {
+  if (!isPlainObject(patch)) return base
+
+  const result = Array.isArray(base) ? [...base] : { ...base }
+
+  for (const [key, value] of Object.entries(patch)) {
+    if (isPlainObject(value) && isPlainObject(result[key])) {
+      result[key] = deepMerge(result[key], value)
+    } else {
+      result[key] = value
+    }
+  }
+
+  return result
+}
+
+function isDevPreviewMode() {
+  const params = new URLSearchParams(window.location.search)
+  return params.get('dev') === '1' || params.get('demo') === '1'
+}
+
+function isSafeVariantName(name) {
+  return /^[a-z0-9-]+$/i.test(name)
+}
+
+async function getRuntimeSceneConfig(defaultConfig) {
+  let config = defaultConfig
+
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const variantName = params.get('variant')
+    const allowDraft = params.get('viewer') === '1' || params.get('useDraftConfig') === '1'
+
+    if (variantName) {
+      if (!isSafeVariantName(variantName)) {
+        console.warn('[config] ignored unsafe variant name:', variantName)
+      } else {
+        const variantModule = await import(/* @vite-ignore */ `./config/variants/${variantName}.js?v=${Date.now()}`)
+        const variantConfig =
+          variantModule.SCENE_CONFIG_PATCH ||
+          variantModule.SCENE_CONFIG ||
+          variantModule.DEFAULT_SCENE_CONFIG ||
+          {}
+
+        config = deepMerge(config, variantConfig)
+        console.log('[config] variant applied:', variantName)
+      }
+    }
+
+    if (allowDraft) {
+      const stored = window.localStorage.getItem('smktSceneConfigDraft')
+      if (stored) {
+        config = deepMerge(config, JSON.parse(stored))
+        console.log('[config] viewer draft applied')
+      }
+    }
+  } catch (error) {
+    console.warn('[config] failed to read runtime config:', error)
+  }
+
+  return config
+}
+
+const SCENE_CONFIG = await getRuntimeSceneConfig(DEFAULT_SCENE_CONFIG)
+
+
+const TARGET_NAME = SCENE_CONFIG.target.name
+const TARGET_JSON = SCENE_CONFIG.target.json
+const SPHERES_GLB = SCENE_CONFIG.target.spheresGlb
+
+const AURA_APPEAR_DELAY_MS = SCENE_CONFIG.timing.auraAppearDelayMs
+const AURA_LOAD_DURATION_MS = SCENE_CONFIG.timing.auraLoadDurationMs
+const FIREWORK_DURATION_MS = SCENE_CONFIG.timing.fireworkDurationMs
+const PLANETS_START_DELAY_MS = SCENE_CONFIG.timing.planetsStartDelayMs
 
 const STATS_ENDPOINT = 'https://webar-stats.yogerasim.workers.dev'
 const STATS_PROJECT = 'webar-mindar-three'
@@ -19,6 +90,11 @@ let pageOpenStatSent = false
 let scanStatSent = false
 
 function sendStatsEvent({ target, label }) {
+  if (isDevPreviewMode()) {
+    console.log(`[stats] ${label} skipped in dev preview mode`)
+    return Promise.resolve(true)
+  }
+
   return fetch(`${STATS_ENDPOINT}/scan`, {
     method: 'POST',
     mode: 'cors',
@@ -107,21 +183,14 @@ function randomInt(min, max) {
 }
 
 function createAuraData() {
-  const phrases = [
-    'Сегодня твоя энергия особенно сильна ✨',
-    'Не подстраивайся под чужие стандарты. Создавай свои.',
-    'Вселенная сегодня на твоей стороне 🌙',
-    'Время сиять ярче обычного ✨',
-    'Твоя аура сегодня особенно сильна 💜',
-  ]
+  const phrases = SCENE_CONFIG.aura.phrases
 
   return {
-    metrics: [
-      { label: 'сияние', icon: '✦', value: randomInt(80, 100) },
-      { label: 'красота', icon: '♥', value: randomInt(80, 100) },
-      { label: 'энергия', icon: '⚡', value: randomInt(80, 100) },
-      { label: 'аура', icon: '☁', value: randomInt(80, 100) },
-    ],
+    metrics: SCENE_CONFIG.aura.metrics.map((metric) => ({
+      label: metric.label,
+      icon: metric.icon,
+      value: randomInt(metric.min, metric.max),
+    })),
     phrase: phrases[randomInt(0, phrases.length - 1)],
   }
 }
@@ -158,8 +227,8 @@ function drawAuraCanvas(ctx, auraData, progress, alpha) {
   ctx.fillStyle = 'rgba(255, 225, 255, 1)'
   ctx.shadowColor = 'rgba(220, 100, 255, 1)'
   ctx.shadowBlur = 28
-  ctx.fillText('ТВОЙ ВАЙБ', 512, 165)
-  ctx.fillText('ТВОЯ КРАСОТА', 512, 230)
+  ctx.fillText(SCENE_CONFIG.aura.titleLine1, 512, 165)
+  ctx.fillText(SCENE_CONFIG.aura.titleLine2, 512, 230)
 
   ctx.shadowBlur = 30
   ctx.strokeStyle = 'rgba(230, 140, 255, 0.95)'
@@ -355,51 +424,7 @@ function createPanel() {
   const mesh = new THREE.Mesh(geometry, material)
   mesh.position.set(0, 0, 0.02)
 
-  // Главный конфиг визуала. Его потом можно крутить руками:
-  // x/y/w/h — позиции и размеры на canvas 1024x1024.
-  const UI = {
-    main: {
-      x: 92,
-      y: 62,
-      w: 840,
-      h: 500,
-      r: 38,
-    },
-    title: {
-      y1: 145,
-      y2: 197,
-      size1: 58,
-      size2: 42,
-    },
-    metrics: {
-      startY: 270,
-      gap: 68,
-      labelX: 150,
-      barX: 340,
-      barW: 350,
-      valueX: 830,
-      barH: 22,
-      labelSize: 27,
-      valueSize: 30,
-    },
-    phrase: {
-      x: 118,
-      y: 610,
-      w: 788,
-      h: 116,
-      r: 32,
-      textY: 658,
-      fontSize: 29,
-    },
-    planets: {
-      cx: 512,
-      cy: 392,
-      rx: 510,
-      ry: 310,
-      baseSize: 22,
-      speed: 0.42,
-    },
-  }
+  const UI = SCENE_CONFIG.panel2d
 
   const starSeeds = Array.from({ length: 70 }, (_, i) => {
     const a = Math.sin(i * 999.13) * 10000
@@ -456,32 +481,32 @@ function createPanel() {
       // Основная карточка: только заголовок и муды
       const main = UI.main
       const mainGradient = ctx.createLinearGradient(main.x, main.y, main.x + main.w, main.y + main.h)
-      mainGradient.addColorStop(0, 'rgba(255, 76, 205, 0.27)')
-      mainGradient.addColorStop(0.5, 'rgba(138, 84, 255, 0.21)')
-      mainGradient.addColorStop(1, 'rgba(57, 210, 255, 0.16)')
+      mainGradient.addColorStop(0, UI.main.gradient[0])
+      mainGradient.addColorStop(0.5, UI.main.gradient[1])
+      mainGradient.addColorStop(1, UI.main.gradient[2])
 
       roundRect(ctx, main.x, main.y, main.w, main.h, main.r)
       ctx.fillStyle = mainGradient
       ctx.fill()
 
-      ctx.lineWidth = 3
-      ctx.strokeStyle = 'rgba(255, 215, 255, 0.82)'
+      ctx.lineWidth = UI.main.strokeWidth
+      ctx.strokeStyle = UI.main.strokeStyle
       ctx.stroke()
 
       const glow = ctx.createRadialGradient(cx, main.y + 155, 10, cx, main.y + 180, 470)
-      glow.addColorStop(0, 'rgba(255, 86, 205, 0.22)')
-      glow.addColorStop(1, 'rgba(255, 86, 205, 0)')
+      glow.addColorStop(0, UI.glow.colorStart)
+      glow.addColorStop(1, UI.glow.colorEnd)
       ctx.fillStyle = glow
       ctx.fillRect(main.x - 90, main.y - 90, main.w + 180, main.h + 180)
 
       ctx.textAlign = 'center'
-      ctx.fillStyle = '#ffffff'
+      ctx.fillStyle = UI.title.color1
       ctx.font = `800 ${UI.title.size1}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-      ctx.fillText('ТВОЙ ВАЙБ', cx, UI.title.y1)
+      ctx.fillText(SCENE_CONFIG.aura.titleLine1, cx, UI.title.y1)
 
       ctx.font = `800 ${UI.title.size2}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-      ctx.fillStyle = 'rgba(255, 224, 255, 0.96)'
-      ctx.fillText('ТВОЯ КРАСОТА', cx, UI.title.y2)
+      ctx.fillStyle = UI.title.color2
+      ctx.fillText(SCENE_CONFIG.aura.titleLine2, cx, UI.title.y2)
 
       // Метрики: отдельные зоны для названия, шкалы и процентов
       const metrics = auraData.metrics || []
@@ -502,20 +527,20 @@ function createPanel() {
 
         ctx.textAlign = 'left'
         ctx.font = `700 ${m.labelSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-        ctx.fillStyle = i === 0 ? 'rgba(255, 245, 255, 1)' : 'rgba(240, 226, 255, 0.94)'
+        ctx.fillStyle = i === 0 ? m.labelColorFirst : m.labelColorOther
         ctx.fillText(metric.label || metric.name || 'Муд', m.labelX, y + 8)
 
         // фон шкалы
         roundRect(ctx, m.barX, y - 13, m.barW, m.barH, 14)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'
+        ctx.fillStyle = m.barBg
         ctx.fill()
 
         // заполнение шкалы
         const fillW = Math.max(0, m.barW * p)
         const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
-        barGradient.addColorStop(0, '#ff68df')
-        barGradient.addColorStop(0.55, '#b079ff')
-        barGradient.addColorStop(1, '#67e8ff')
+        barGradient.addColorStop(0, m.barGradient[0])
+        barGradient.addColorStop(0.55, m.barGradient[1])
+        barGradient.addColorStop(1, m.barGradient[2])
 
         roundRect(ctx, m.barX, y - 13, fillW, m.barH, 14)
         ctx.fillStyle = barGradient
@@ -524,13 +549,13 @@ function createPanel() {
         // проценты справа, отдельно от шкалы
         ctx.textAlign = 'right'
         ctx.font = `800 ${m.valueSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.98)'
+        ctx.fillStyle = m.valueColor
         ctx.fillText(`${value}%`, m.valueX, y + 10)
 
         if (p > 0.05 && p < 1) {
           const sparkX = m.barX + fillW
           ctx.beginPath()
-          ctx.fillStyle = 'rgba(255,255,255,0.88)'
+          ctx.fillStyle = m.sparkColor
           ctx.arc(sparkX, y - 2, 4.5 + 2 * Math.sin(elapsed * 3.5 + i), 0, Math.PI * 2)
           ctx.fill()
         }
@@ -541,11 +566,11 @@ function createPanel() {
       // Отдельная нижняя рамка для фразы. Она НЕ внутри основной карточки.
       const phrase = UI.phrase
       roundRect(ctx, phrase.x, phrase.y, phrase.w, phrase.h, phrase.r)
-      ctx.fillStyle = 'rgba(20, 8, 38, 0.42)'
+      ctx.fillStyle = phrase.fillStyle
       ctx.fill()
 
       ctx.lineWidth = 2.5
-      ctx.strokeStyle = loaded ? 'rgba(255, 225, 255, 0.94)' : 'rgba(255, 225, 255, 0.38)'
+      ctx.strokeStyle = loaded ? phrase.strokeLoaded : phrase.strokeLoading
       ctx.stroke()
 
       // Пять фейерверков по очереди
@@ -587,9 +612,9 @@ function createPanel() {
         ctx.save()
         ctx.globalAlpha = alpha * phraseAlpha
         ctx.textAlign = 'center'
-        ctx.fillStyle = 'rgba(255,255,255,0.98)'
+        ctx.fillStyle = phrase.textColor
         ctx.font = `700 ${phrase.fontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
-        wrapText(ctx, auraData.phrase || '', cx, phrase.textY, phrase.w - 80, 34)
+        wrapText(ctx, auraData.phrase || '', cx, phrase.textY, phrase.w - 80, phrase.lineHeight)
         ctx.restore()
       }
 
@@ -830,7 +855,7 @@ function makeAuraExperience(scene) {
     } else if (fireworkT < 1) {
       setStatus('Вайб загружен ✨')
     } else {
-      setStatus('ТВОЙ ВАЙБ — ТВОЯ КРАСОТА')
+      setStatus(SCENE_CONFIG.aura.statusText)
     }
   }
 

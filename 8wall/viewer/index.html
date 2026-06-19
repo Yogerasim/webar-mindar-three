@@ -13,14 +13,25 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    h1 {
+    h1, h2 {
       margin-top: 0;
+    }
+
+    code {
+      color: #ffd1ff;
+    }
+
+    .notice {
+      max-width: 980px;
+      line-height: 1.5;
+      opacity: .86;
     }
 
     .grid {
       display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 16px;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      margin-top: 18px;
     }
 
     .card {
@@ -32,52 +43,780 @@
 
     label {
       display: block;
-      margin: 12px 0;
+      margin: 14px 0;
       font-size: 14px;
     }
 
-    input {
+    input, textarea {
       width: 100%;
+      box-sizing: border-box;
+      margin-top: 6px;
     }
 
-    code, pre {
+    input[type="text"], textarea {
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(255,255,255,.16);
+      color: white;
+      border-radius: 10px;
+      padding: 10px;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+
+    button, a.button {
+      display: inline-block;
+      margin: 8px 8px 8px 0;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 0;
+      color: #16051d;
+      background: #ffd1ff;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: rgba(255,255,255,.18);
+      color: white;
+    }
+
+    pre {
       white-space: pre-wrap;
+      word-break: break-word;
+      padding: 14px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.35);
+      color: #ffd1ff;
+      max-height: 420px;
+      overflow: auto;
+    }
+
+    .value {
+      opacity: .75;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .viewer-layout {
+      display: grid;
+      grid-template-columns: minmax(520px, 1fr) 460px;
+      gap: 18px;
+      height: calc(100vh - 48px);
+    }
+
+    .preview-panel {
+      position: sticky;
+      top: 24px;
+      height: calc(100vh - 48px);
+      min-height: 640px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 24px;
+      overflow: hidden;
+      background: rgba(0,0,0,.35);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-toolbar {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+    }
+
+    .preview-toolbar-title {
+      font-weight: 800;
       color: #ffd1ff;
     }
 
-    a {
-      color: #ffd1ff;
+    .preview-frame-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      background:
+        radial-gradient(circle at 50% 20%, rgba(255, 76, 205, .15), transparent 42%),
+        #050208;
     }
+
+    #previewFrame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+      background: #000;
+    }
+
+    .settings-panel {
+      height: calc(100vh - 48px);
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .settings-panel::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .settings-panel::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,.25);
+      border-radius: 999px;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 14px;
+      }
+
+      .viewer-layout {
+        display: block;
+        height: auto;
+      }
+
+      .preview-panel {
+        position: relative;
+        top: 0;
+        height: 72vh;
+        min-height: 520px;
+        margin-bottom: 18px;
+      }
+
+      .settings-panel {
+        height: auto;
+        overflow: visible;
+      }
+    }
+
+
+    #scenePreview {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      background: #120718;
+    }
+
+    .preview-frame-wrap {
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
   </style>
 </head>
+
 <body>
+  <main class="viewer-layout">
+    <section class="preview-panel">
+      <div class="preview-toolbar">
+        <div>
+          <div class="preview-toolbar-title">2D Scene Preview</div>
+          <div style="opacity:.72;font-size:13px;">2D layout preview без камеры</div>
+        </div>
+        <div>
+          <button id="refreshPreview" class="secondary" type="button">Обновить сцену</button>
+          <a id="openPreviewLarge" class="button" href="/8wall/?viewer=1&dev=1" target="_blank">Открыть AR отдельно</a>
+        </div>
+      </div>
+      <div class="preview-frame-wrap">
+        <canvas id="scenePreview" width="1024" height="1024"></canvas>
+      </div>
+    </section>
+
+    <aside class="settings-panel">
   <h1>SMKT Scene Viewer</h1>
-  <p>Безопасный viewer для будущей настройки сцены. Сейчас он не меняет production-сцену напрямую, чтобы не сломать статистику и target.</p>
+
+  <p class="notice">
+    Viewer меняет draft-конфиг только в твоём браузере. Production не меняется.
+    Чтобы увидеть изменения, нажми <b>Сохранить draft</b>, потом <b>Открыть preview AR</b>.
+    Preview откроется как <code>/8wall/?viewer=1</code>, и только в этом режиме сцена прочитает draft из localStorage.
+  </p>
 
   <p>
-    <a href="/8wall/">Открыть production AR scene</a>
+    <button id="save">Сохранить draft</button>
+    <button id="reset" class="secondary">Сбросить draft</button>
+    <button id="copy" class="secondary">Скопировать config</button>
+    <a id="preview" class="button" href="/8wall/?viewer=1&dev=1" target="_blank">Открыть preview AR</a>
   </p>
 
   <div class="grid">
     <section class="card">
-      <h2>Planets</h2>
-      <label>Orbit radius X <input type="range" min="100" max="700" value="420"></label>
-      <label>Orbit radius Y <input type="range" min="100" max="500" value="250"></label>
-      <label>Base size <input type="range" min="5" max="80" value="20"></label>
-      <label>Speed <input type="range" min="0" max="200" value="42"></label>
+      <h2>Тексты</h2>
+      <label>Title line 1 <input id="titleLine1" type="text"></label>
+      <label>Title line 2 <input id="titleLine2" type="text"></label>
+      <label>Status text <input id="statusText" type="text"></label>
     </section>
 
     <section class="card">
-      <h2>Panel / Glow</h2>
-      <label>Panel opacity <input type="range" min="0" max="100" value="66"></label>
-      <label>Border opacity <input type="range" min="0" max="100" value="82"></label>
-      <label>Glow <input type="range" min="0" max="100" value="82"></label>
+      <h2>Фразы</h2>
+      <label>Каждая фраза с новой строки
+        <textarea id="phrases"></textarea>
+      </label>
     </section>
 
     <section class="card">
-      <h2>Next step</h2>
-      <p>Следующий коммит: подключить эти значения к <code>smkt-scene010.js</code> через отдельный <code>sceneConfig.js</code>, чтобы визуал менялся без правки статистики.</p>
+      <h2>Timing</h2>
+      <label>Aura load duration <span class="value" id="auraLoadDurationMsValue"></span><input id="auraLoadDurationMs" type="range" min="1000" max="9000" step="100"></label>
+      <label>Firework duration <span class="value" id="fireworkDurationMsValue"></span><input id="fireworkDurationMs" type="range" min="500" max="6000" step="100"></label>
+      <label>Planets start delay <span class="value" id="planetsStartDelayMsValue"></span><input id="planetsStartDelayMs" type="range" min="0" max="6000" step="100"></label>
+    </section>
+
+    <section class="card">
+      <h2>Metrics range</h2>
+      <label>Min value <span class="value" id="metricMinValue"></span><input id="metricMin" type="range" min="0" max="100" step="1"></label>
+      <label>Max value <span class="value" id="metricMaxValue"></span><input id="metricMax" type="range" min="0" max="100" step="1"></label>
+    </section>
+
+    <section class="card">
+      <h2>Main panel</h2>
+      <label>X <span class="value" id="mainXValue"></span><input id="mainX" type="range" min="0" max="300" step="1"></label>
+      <label>Y <span class="value" id="mainYValue"></span><input id="mainY" type="range" min="0" max="300" step="1"></label>
+      <label>Width <span class="value" id="mainWValue"></span><input id="mainW" type="range" min="400" max="1024" step="1"></label>
+      <label>Height <span class="value" id="mainHValue"></span><input id="mainH" type="range" min="200" max="900" step="1"></label>
+      <label>Radius <span class="value" id="mainRValue"></span><input id="mainR" type="range" min="0" max="100" step="1"></label>
+      <label>Stroke width <span class="value" id="mainStrokeWidthValue"></span><input id="mainStrokeWidth" type="range" min="0" max="12" step="0.5"></label>
+    </section>
+
+    <section class="card">
+      <h2>Title layout</h2>
+      <label>Line 1 Y <span class="value" id="titleY1Value"></span><input id="titleY1" type="range" min="0" max="400" step="1"></label>
+      <label>Line 2 Y <span class="value" id="titleY2Value"></span><input id="titleY2" type="range" min="0" max="450" step="1"></label>
+      <label>Line 1 size <span class="value" id="titleSize1Value"></span><input id="titleSize1" type="range" min="10" max="120" step="1"></label>
+      <label>Line 2 size <span class="value" id="titleSize2Value"></span><input id="titleSize2" type="range" min="10" max="100" step="1"></label>
+    </section>
+
+    <section class="card">
+      <h2>Metrics layout</h2>
+      <label>Start Y <span class="value" id="metricsStartYValue"></span><input id="metricsStartY" type="range" min="100" max="700" step="1"></label>
+      <label>Gap <span class="value" id="metricsGapValue"></span><input id="metricsGap" type="range" min="20" max="140" step="1"></label>
+      <label>Label X <span class="value" id="metricsLabelXValue"></span><input id="metricsLabelX" type="range" min="0" max="500" step="1"></label>
+      <label>Bar X <span class="value" id="metricsBarXValue"></span><input id="metricsBarX" type="range" min="0" max="800" step="1"></label>
+      <label>Bar width <span class="value" id="metricsBarWValue"></span><input id="metricsBarW" type="range" min="80" max="700" step="1"></label>
+      <label>Value X <span class="value" id="metricsValueXValue"></span><input id="metricsValueX" type="range" min="300" max="1000" step="1"></label>
+      <label>Label size <span class="value" id="metricsLabelSizeValue"></span><input id="metricsLabelSize" type="range" min="10" max="70" step="1"></label>
+      <label>Value size <span class="value" id="metricsValueSizeValue"></span><input id="metricsValueSize" type="range" min="10" max="80" step="1"></label>
+    </section>
+
+    <section class="card">
+      <h2>Phrase block</h2>
+      <label>X <span class="value" id="phraseXValue"></span><input id="phraseX" type="range" min="0" max="500" step="1"></label>
+      <label>Y <span class="value" id="phraseYValue"></span><input id="phraseY" type="range" min="300" max="950" step="1"></label>
+      <label>Width <span class="value" id="phraseWValue"></span><input id="phraseW" type="range" min="200" max="1024" step="1"></label>
+      <label>Height <span class="value" id="phraseHValue"></span><input id="phraseH" type="range" min="40" max="350" step="1"></label>
+      <label>Text Y <span class="value" id="phraseTextYValue"></span><input id="phraseTextY" type="range" min="300" max="1000" step="1"></label>
+      <label>Font size <span class="value" id="phraseFontSizeValue"></span><input id="phraseFontSize" type="range" min="10" max="80" step="1"></label>
+      <label>Line height <span class="value" id="phraseLineHeightValue"></span><input id="phraseLineHeight" type="range" min="12" max="100" step="1"></label>
+    </section>
+
+    <section class="card">
+      <h2>Planets / orbit</h2>
+      <label>Center X <span class="value" id="planetsCxValue"></span><input id="planetsCx" type="range" min="0" max="1024" step="1"></label>
+      <label>Center Y <span class="value" id="planetsCyValue"></span><input id="planetsCy" type="range" min="0" max="1024" step="1"></label>
+      <label>Radius X <span class="value" id="planetsRxValue"></span><input id="planetsRx" type="range" min="0" max="900" step="1"></label>
+      <label>Radius Y <span class="value" id="planetsRyValue"></span><input id="planetsRy" type="range" min="0" max="700" step="1"></label>
+      <label>Base size <span class="value" id="planetsBaseSizeValue"></span><input id="planetsBaseSize" type="range" min="1" max="80" step="1"></label>
+      <label>Speed <span class="value" id="planetsSpeedValue"></span><input id="planetsSpeed" type="range" min="0" max="2" step="0.01"></label>
+    </section>
+
+    <section class="card">
+      <h2>Colors / opacity</h2>
+      <label>Main gradient 1 <input id="mainGradient0" type="text"></label>
+      <label>Main gradient 2 <input id="mainGradient1" type="text"></label>
+      <label>Main gradient 3 <input id="mainGradient2" type="text"></label>
+      <label>Main stroke <input id="mainStrokeStyle" type="text"></label>
+      <label>Glow start <input id="glowColorStart" type="text"></label>
+      <label>Glow end <input id="glowColorEnd" type="text"></label>
+      <label>Title color 1 <input id="titleColor1" type="text"></label>
+      <label>Title color 2 <input id="titleColor2" type="text"></label>
+      <label>Phrase fill <input id="phraseFillStyle" type="text"></label>
+      <label>Phrase text <input id="phraseTextColor" type="text"></label>
     </section>
   </div>
+
+  <h2>Готовый config для вставки в repo</h2>
+  <pre id="output"></pre>
+
+    </aside>
+  </main>
+
+  <script type="module">
+    import { DEFAULT_SCENE_CONFIG } from '../config/scene-config.js'
+
+    const STORAGE_KEY = 'smktSceneConfigDraft'
+    const el = (id) => document.getElementById(id)
+    const scenePreview = el('scenePreview')
+    const scenePreviewCtx = scenePreview?.getContext('2d')
+
+
+    function getPreviewUrl() {
+      return `2D layout preview без камеры&ts=${Date.now()}`
+    }
+
+    function refreshPreview() {
+      const url = getPreviewUrl()
+      if (previewFrame) previewFrame.src = url
+      if (el('preview')) el('preview').href = url
+      if (el('openPreviewLarge')) el('openPreviewLarge').href = url
+    }
+
+    function isPlainObject(value) {
+      return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+    }
+
+    function deepMerge(base, patch) {
+      const result = structuredClone(base)
+
+      for (const [key, value] of Object.entries(patch || {})) {
+        if (isPlainObject(value) && isPlainObject(result[key])) {
+          result[key] = deepMerge(result[key], value)
+        } else {
+          result[key] = value
+        }
+      }
+
+      return result
+    }
+
+
+    const targetImage = new Image()
+    let targetImageLoaded = false
+
+    const targetCandidates = [
+      '../image-targets/waves.png',
+      '../image-targets/waves.jpg',
+      '../image-targets/waves.jpeg',
+      '../image-targets/waves.webp',
+      '../image-targets/waves.svg',
+    ]
+
+    function loadTargetImage(index = 0) {
+      if (!targetCandidates[index]) {
+        drawScenePreview()
+        return
+      }
+
+      targetImage.onload = () => {
+        targetImageLoaded = true
+        drawScenePreview()
+      }
+
+      targetImage.onerror = () => {
+        loadTargetImage(index + 1)
+      }
+
+      targetImage.src = targetCandidates[index]
+    }
+
+    function roundRectPreview(ctx, x, y, w, h, r) {
+      ctx.beginPath()
+      ctx.moveTo(x + r, y)
+      ctx.lineTo(x + w - r, y)
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+      ctx.lineTo(x + w, y + h - r)
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+      ctx.lineTo(x + r, y + h)
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+      ctx.lineTo(x, y + r)
+      ctx.quadraticCurveTo(x, y, x + r, y)
+      ctx.closePath()
+    }
+
+    function wrapPreviewText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = String(text).split(' ')
+      let line = ''
+      let currentY = y
+
+      for (let i = 0; i < words.length; i++) {
+        const testLine = `${line}${words[i]} `
+        const metrics = ctx.measureText(testLine)
+
+        if (metrics.width > maxWidth && i > 0) {
+          ctx.fillText(line.trim(), x, currentY)
+          line = `${words[i]} `
+          currentY += lineHeight
+        } else {
+          line = testLine
+        }
+      }
+
+      ctx.fillText(line.trim(), x, currentY)
+    }
+
+    function drawTargetBackground(ctx) {
+      ctx.save()
+      ctx.fillStyle = '#100716'
+      ctx.fillRect(0, 0, 1024, 1024)
+
+      if (targetImageLoaded) {
+        const scale = Math.min(1024 / targetImage.width, 1024 / targetImage.height)
+        const w = targetImage.width * scale
+        const h = targetImage.height * scale
+        const x = (1024 - w) / 2
+        const y = (1024 - h) / 2
+
+        ctx.globalAlpha = 0.72
+        ctx.drawImage(targetImage, x, y, w, h)
+      } else {
+        ctx.globalAlpha = 0.34
+        ctx.strokeStyle = 'rgba(255,255,255,.22)'
+        ctx.lineWidth = 1
+
+        for (let i = 0; i <= 1024; i += 64) {
+          ctx.beginPath()
+          ctx.moveTo(i, 0)
+          ctx.lineTo(i, 1024)
+          ctx.stroke()
+
+          ctx.beginPath()
+          ctx.moveTo(0, i)
+          ctx.lineTo(1024, i)
+          ctx.stroke()
+        }
+
+        ctx.globalAlpha = 1
+        ctx.fillStyle = 'rgba(255,255,255,.55)'
+        ctx.font = '700 28px system-ui'
+        ctx.textAlign = 'center'
+        ctx.fillText('TARGET PREVIEW', 512, 512)
+      }
+
+      ctx.globalAlpha = 1
+      ctx.strokeStyle = 'rgba(255, 209, 255, .8)'
+      ctx.lineWidth = 3
+      ctx.strokeRect(2, 2, 1020, 1020)
+
+      ctx.restore()
+    }
+
+    function drawScenePreview() {
+      if (!scenePreviewCtx) return
+
+      readInputValues()
+
+      const ctx = scenePreviewCtx
+      const cfg = config
+      const UI = cfg.panel2d
+      const cx = 512
+
+      ctx.clearRect(0, 0, 1024, 1024)
+      drawTargetBackground(ctx)
+
+      ctx.save()
+
+      const main = UI.main
+      const mainGradient = ctx.createLinearGradient(main.x, main.y, main.x + main.w, main.y + main.h)
+      mainGradient.addColorStop(0, main.gradient[0])
+      mainGradient.addColorStop(0.5, main.gradient[1])
+      mainGradient.addColorStop(1, main.gradient[2])
+
+      roundRectPreview(ctx, main.x, main.y, main.w, main.h, main.r)
+      ctx.fillStyle = mainGradient
+      ctx.fill()
+
+      ctx.lineWidth = main.strokeWidth
+      ctx.strokeStyle = main.strokeStyle
+      ctx.stroke()
+
+      const glow = ctx.createRadialGradient(cx, main.y + 155, 10, cx, main.y + 180, 470)
+      glow.addColorStop(0, UI.glow.colorStart)
+      glow.addColorStop(1, UI.glow.colorEnd)
+      ctx.fillStyle = glow
+      ctx.fillRect(main.x - 90, main.y - 90, main.w + 180, main.h + 180)
+
+      ctx.textAlign = 'center'
+      ctx.fillStyle = UI.title.color1
+      ctx.font = `800 ${UI.title.size1}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+      ctx.fillText(cfg.aura.titleLine1, cx, UI.title.y1)
+
+      ctx.fillStyle = UI.title.color2
+      ctx.font = `800 ${UI.title.size2}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+      ctx.fillText(cfg.aura.titleLine2, cx, UI.title.y2)
+
+      const metricValues = [97, 94, 91, 88]
+      const m = UI.metrics
+
+      cfg.aura.metrics.forEach((metric, i) => {
+        const value = metricValues[i] ?? 90
+        const p = value / 100
+        const y = m.startY + i * m.gap
+
+        ctx.textAlign = 'left'
+        ctx.font = `700 ${m.labelSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+        ctx.fillStyle = i === 0 ? m.labelColorFirst : m.labelColorOther
+        ctx.fillText(metric.label || 'metric', m.labelX, y + 8)
+
+        roundRectPreview(ctx, m.barX, y - 13, m.barW, m.barH, 14)
+        ctx.fillStyle = m.barBg
+        ctx.fill()
+
+        const fillW = Math.max(0, m.barW * p)
+        const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
+        barGradient.addColorStop(0, m.barGradient[0])
+        barGradient.addColorStop(0.55, m.barGradient[1])
+        barGradient.addColorStop(1, m.barGradient[2])
+
+        roundRectPreview(ctx, m.barX, y - 13, fillW, m.barH, 14)
+        ctx.fillStyle = barGradient
+        ctx.fill()
+
+        ctx.textAlign = 'right'
+        ctx.font = `800 ${m.valueSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+        ctx.fillStyle = m.valueColor
+        ctx.fillText(`${value}%`, m.valueX, y + 10)
+      })
+
+      const phrase = UI.phrase
+      roundRectPreview(ctx, phrase.x, phrase.y, phrase.w, phrase.h, phrase.r)
+      ctx.fillStyle = phrase.fillStyle
+      ctx.fill()
+
+      ctx.lineWidth = 2.5
+      ctx.strokeStyle = phrase.strokeLoaded
+      ctx.stroke()
+
+      ctx.textAlign = 'center'
+      ctx.fillStyle = phrase.textColor
+      ctx.font = `700 ${phrase.fontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+      wrapPreviewText(ctx, cfg.aura.phrases[0] || '', cx, phrase.textY, phrase.w - 80, phrase.lineHeight)
+
+      const pl = UI.planets
+      const planetColors = ['#ff79d8', '#8c7cff', '#65eaff', '#ffd36b']
+
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI * 0.5
+        const x = pl.cx + Math.cos(a) * pl.rx
+        const y = pl.cy + Math.sin(a) * pl.ry
+        const size = pl.baseSize + i * 4
+
+        const pg = ctx.createRadialGradient(x - size * 0.3, y - size * 0.3, 2, x, y, size)
+        pg.addColorStop(0, '#ffffff')
+        pg.addColorStop(1, planetColors[i])
+
+        ctx.beginPath()
+        ctx.fillStyle = pg
+        ctx.arc(x, y, size, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      ctx.restore()
+    }
+
+
+    function loadConfig() {
+      const saved = localStorage.getItem(STORAGE_KEY)
+
+      if (!saved) return structuredClone(DEFAULT_SCENE_CONFIG)
+
+      try {
+        return deepMerge(DEFAULT_SCENE_CONFIG, JSON.parse(saved))
+      } catch {
+        return structuredClone(DEFAULT_SCENE_CONFIG)
+      }
+    }
+
+    const config = loadConfig()
+
+    function setValue(id, value) {
+      el(id).value = value
+    }
+
+    function getNumber(id) {
+      return Number(el(id).value)
+    }
+
+    function setLabel(id, value) {
+      const node = el(`${id}Value`)
+      if (node) node.textContent = String(value)
+    }
+
+    function setInputValues() {
+      setValue('titleLine1', config.aura.titleLine1)
+      setValue('titleLine2', config.aura.titleLine2)
+      setValue('statusText', config.aura.statusText)
+      setValue('phrases', config.aura.phrases.join('\n'))
+
+      setValue('auraLoadDurationMs', config.timing.auraLoadDurationMs)
+      setValue('fireworkDurationMs', config.timing.fireworkDurationMs)
+      setValue('planetsStartDelayMs', config.timing.planetsStartDelayMs)
+
+      setValue('metricMin', config.aura.metrics[0].min)
+      setValue('metricMax', config.aura.metrics[0].max)
+
+      setValue('mainX', config.panel2d.main.x)
+      setValue('mainY', config.panel2d.main.y)
+      setValue('mainW', config.panel2d.main.w)
+      setValue('mainH', config.panel2d.main.h)
+      setValue('mainR', config.panel2d.main.r)
+      setValue('mainStrokeWidth', config.panel2d.main.strokeWidth)
+
+      setValue('titleY1', config.panel2d.title.y1)
+      setValue('titleY2', config.panel2d.title.y2)
+      setValue('titleSize1', config.panel2d.title.size1)
+      setValue('titleSize2', config.panel2d.title.size2)
+
+      setValue('metricsStartY', config.panel2d.metrics.startY)
+      setValue('metricsGap', config.panel2d.metrics.gap)
+      setValue('metricsLabelX', config.panel2d.metrics.labelX)
+      setValue('metricsBarX', config.panel2d.metrics.barX)
+      setValue('metricsBarW', config.panel2d.metrics.barW)
+      setValue('metricsValueX', config.panel2d.metrics.valueX)
+      setValue('metricsLabelSize', config.panel2d.metrics.labelSize)
+      setValue('metricsValueSize', config.panel2d.metrics.valueSize)
+
+      setValue('phraseX', config.panel2d.phrase.x)
+      setValue('phraseY', config.panel2d.phrase.y)
+      setValue('phraseW', config.panel2d.phrase.w)
+      setValue('phraseH', config.panel2d.phrase.h)
+      setValue('phraseTextY', config.panel2d.phrase.textY)
+      setValue('phraseFontSize', config.panel2d.phrase.fontSize)
+      setValue('phraseLineHeight', config.panel2d.phrase.lineHeight)
+
+      setValue('planetsCx', config.panel2d.planets.cx)
+      setValue('planetsCy', config.panel2d.planets.cy)
+      setValue('planetsRx', config.panel2d.planets.rx)
+      setValue('planetsRy', config.panel2d.planets.ry)
+      setValue('planetsBaseSize', config.panel2d.planets.baseSize)
+      setValue('planetsSpeed', config.panel2d.planets.speed)
+
+      setValue('mainGradient0', config.panel2d.main.gradient[0])
+      setValue('mainGradient1', config.panel2d.main.gradient[1])
+      setValue('mainGradient2', config.panel2d.main.gradient[2])
+      setValue('mainStrokeStyle', config.panel2d.main.strokeStyle)
+      setValue('glowColorStart', config.panel2d.glow.colorStart)
+      setValue('glowColorEnd', config.panel2d.glow.colorEnd)
+      setValue('titleColor1', config.panel2d.title.color1)
+      setValue('titleColor2', config.panel2d.title.color2)
+      setValue('phraseFillStyle', config.panel2d.phrase.fillStyle)
+      setValue('phraseTextColor', config.panel2d.phrase.textColor)
+    }
+
+    function readInputValues() {
+      config.aura.titleLine1 = el('titleLine1').value
+      config.aura.titleLine2 = el('titleLine2').value
+      config.aura.statusText = el('statusText').value
+
+      config.aura.phrases = el('phrases').value
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+
+      config.timing.auraLoadDurationMs = getNumber('auraLoadDurationMs')
+      config.timing.fireworkDurationMs = getNumber('fireworkDurationMs')
+      config.timing.planetsStartDelayMs = getNumber('planetsStartDelayMs')
+
+      const min = getNumber('metricMin')
+      const max = getNumber('metricMax')
+      config.aura.metrics = config.aura.metrics.map((metric) => ({ ...metric, min, max }))
+
+      config.panel2d.main.x = getNumber('mainX')
+      config.panel2d.main.y = getNumber('mainY')
+      config.panel2d.main.w = getNumber('mainW')
+      config.panel2d.main.h = getNumber('mainH')
+      config.panel2d.main.r = getNumber('mainR')
+      config.panel2d.main.strokeWidth = getNumber('mainStrokeWidth')
+
+      config.panel2d.title.y1 = getNumber('titleY1')
+      config.panel2d.title.y2 = getNumber('titleY2')
+      config.panel2d.title.size1 = getNumber('titleSize1')
+      config.panel2d.title.size2 = getNumber('titleSize2')
+
+      config.panel2d.metrics.startY = getNumber('metricsStartY')
+      config.panel2d.metrics.gap = getNumber('metricsGap')
+      config.panel2d.metrics.labelX = getNumber('metricsLabelX')
+      config.panel2d.metrics.barX = getNumber('metricsBarX')
+      config.panel2d.metrics.barW = getNumber('metricsBarW')
+      config.panel2d.metrics.valueX = getNumber('metricsValueX')
+      config.panel2d.metrics.labelSize = getNumber('metricsLabelSize')
+      config.panel2d.metrics.valueSize = getNumber('metricsValueSize')
+
+      config.panel2d.phrase.x = getNumber('phraseX')
+      config.panel2d.phrase.y = getNumber('phraseY')
+      config.panel2d.phrase.w = getNumber('phraseW')
+      config.panel2d.phrase.h = getNumber('phraseH')
+      config.panel2d.phrase.textY = getNumber('phraseTextY')
+      config.panel2d.phrase.fontSize = getNumber('phraseFontSize')
+      config.panel2d.phrase.lineHeight = getNumber('phraseLineHeight')
+
+      config.panel2d.planets.cx = getNumber('planetsCx')
+      config.panel2d.planets.cy = getNumber('planetsCy')
+      config.panel2d.planets.rx = getNumber('planetsRx')
+      config.panel2d.planets.ry = getNumber('planetsRy')
+      config.panel2d.planets.baseSize = getNumber('planetsBaseSize')
+      config.panel2d.planets.speed = getNumber('planetsSpeed')
+
+      config.panel2d.main.gradient[0] = el('mainGradient0').value
+      config.panel2d.main.gradient[1] = el('mainGradient1').value
+      config.panel2d.main.gradient[2] = el('mainGradient2').value
+      config.panel2d.main.strokeStyle = el('mainStrokeStyle').value
+      config.panel2d.glow.colorStart = el('glowColorStart').value
+      config.panel2d.glow.colorEnd = el('glowColorEnd').value
+      config.panel2d.title.color1 = el('titleColor1').value
+      config.panel2d.title.color2 = el('titleColor2').value
+      config.panel2d.phrase.fillStyle = el('phraseFillStyle').value
+      config.panel2d.phrase.textColor = el('phraseTextColor').value
+    }
+
+    function updateLabels() {
+      const ids = [
+        'auraLoadDurationMs', 'fireworkDurationMs', 'planetsStartDelayMs',
+        'metricMin', 'metricMax',
+        'mainX', 'mainY', 'mainW', 'mainH', 'mainR', 'mainStrokeWidth',
+        'titleY1', 'titleY2', 'titleSize1', 'titleSize2',
+        'metricsStartY', 'metricsGap', 'metricsLabelX', 'metricsBarX', 'metricsBarW', 'metricsValueX', 'metricsLabelSize', 'metricsValueSize',
+        'phraseX', 'phraseY', 'phraseW', 'phraseH', 'phraseTextY', 'phraseFontSize', 'phraseLineHeight',
+        'planetsCx', 'planetsCy', 'planetsRx', 'planetsRy', 'planetsBaseSize', 'planetsSpeed',
+      ]
+
+      ids.forEach((id) => setLabel(id, el(id).value))
+    }
+
+    function configAsModuleText() {
+      return `export const DEFAULT_SCENE_CONFIG = ${JSON.stringify(config, null, 2)}\n`
+    }
+
+    function updateOutput() {
+      readInputValues()
+      updateLabels()
+      el('output').textContent = configAsModuleText()
+      const previewUrl = getPreviewUrl()
+      el('preview').href = previewUrl
+      if (el('openPreviewLarge')) el('openPreviewLarge').href = previewUrl
+      drawScenePreview()
+    }
+
+    document.querySelectorAll('input, textarea').forEach((input) => {
+      input.addEventListener('input', updateOutput)
+    })
+
+    el('save').addEventListener('click', () => {
+      readInputValues()
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
+      updateOutput()
+      refreshPreview()
+      alert('Draft сохранён. Preview обновлён.')
+    })
+
+    el('refreshPreview').addEventListener('click', refreshPreview)
+
+    el('reset').addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_KEY)
+      location.reload()
+    })
+
+    el('copy').addEventListener('click', async () => {
+      await navigator.clipboard.writeText(configAsModuleText())
+      alert('Config скопирован.')
+    })
+
+    setInputValues()
+    loadTargetImage()
+    updateOutput()
+  </script>
 </body>
 </html>
