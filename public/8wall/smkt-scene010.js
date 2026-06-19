@@ -24,25 +24,54 @@ function deepMerge(base, patch) {
   return result
 }
 
-function getRuntimeSceneConfig(defaultConfig) {
-  try {
-    const params = new URLSearchParams(window.location.search)
-    const allowDraft = params.get('viewer') === '1' || params.get('useDraftConfig') === '1'
-
-    if (!allowDraft) return defaultConfig
-
-    const stored = window.localStorage.getItem('smktSceneConfigDraft')
-    if (stored) {
-      return deepMerge(defaultConfig, JSON.parse(stored))
-    }
-  } catch (error) {
-    console.warn('[config] failed to read viewer config:', error)
-  }
-
-  return defaultConfig
+function isDevPreviewMode() {
+  const params = new URLSearchParams(window.location.search)
+  return params.get('dev') === '1' || params.get('demo') === '1'
 }
 
-const SCENE_CONFIG = getRuntimeSceneConfig(DEFAULT_SCENE_CONFIG)
+function isSafeVariantName(name) {
+  return /^[a-z0-9-]+$/i.test(name)
+}
+
+async function getRuntimeSceneConfig(defaultConfig) {
+  let config = defaultConfig
+
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const variantName = params.get('variant')
+    const allowDraft = params.get('viewer') === '1' || params.get('useDraftConfig') === '1'
+
+    if (variantName) {
+      if (!isSafeVariantName(variantName)) {
+        console.warn('[config] ignored unsafe variant name:', variantName)
+      } else {
+        const variantModule = await import(/* @vite-ignore */ `./config/variants/${variantName}.js?v=${Date.now()}`)
+        const variantConfig =
+          variantModule.SCENE_CONFIG_PATCH ||
+          variantModule.SCENE_CONFIG ||
+          variantModule.DEFAULT_SCENE_CONFIG ||
+          {}
+
+        config = deepMerge(config, variantConfig)
+        console.log('[config] variant applied:', variantName)
+      }
+    }
+
+    if (allowDraft) {
+      const stored = window.localStorage.getItem('smktSceneConfigDraft')
+      if (stored) {
+        config = deepMerge(config, JSON.parse(stored))
+        console.log('[config] viewer draft applied')
+      }
+    }
+  } catch (error) {
+    console.warn('[config] failed to read runtime config:', error)
+  }
+
+  return config
+}
+
+const SCENE_CONFIG = await getRuntimeSceneConfig(DEFAULT_SCENE_CONFIG)
 
 
 const TARGET_NAME = SCENE_CONFIG.target.name
@@ -61,6 +90,11 @@ let pageOpenStatSent = false
 let scanStatSent = false
 
 function sendStatsEvent({ target, label }) {
+  if (isDevPreviewMode()) {
+    console.log(`[stats] ${label} skipped in dev preview mode`)
+    return Promise.resolve(true)
+  }
+
   return fetch(`${STATS_ENDPOINT}/scan`, {
     method: 'POST',
     mode: 'cors',
