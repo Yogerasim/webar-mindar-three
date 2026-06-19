@@ -426,6 +426,13 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   ctx.fillText(line.trim(), x, currentY)
 }
 
+
+function percentToProgress(value) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return 0
+  return Math.max(0, Math.min(1, number / 100))
+}
+
 function createPanel() {
   const canvas2d = document.createElement('canvas')
   canvas2d.width = 1024
@@ -558,7 +565,7 @@ function createPanel() {
         ctx.fill()
 
         // заполнение шкалы
-        const fillW = Math.max(0, m.barW * clamp01(value / 100))
+        const fillW = Math.max(0, m.barW * percentToProgress(value))
         const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
         barGradient.addColorStop(0, m.barGradient[0])
         barGradient.addColorStop(0.55, m.barGradient[1])
