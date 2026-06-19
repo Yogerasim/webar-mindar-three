@@ -462,14 +462,20 @@
       ctx.fillRect(0, 0, 1024, 1024)
 
       if (targetImageLoaded) {
-        const scale = Math.min(1024 / targetImage.width, 1024 / targetImage.height)
+        const rotationDeg = -90
+        const rotationRad = rotationDeg * Math.PI / 180
+        const rotatedFitW = targetImage.height
+        const rotatedFitH = targetImage.width
+        const scale = Math.min(1024 / rotatedFitW, 1024 / rotatedFitH)
         const w = targetImage.width * scale
         const h = targetImage.height * scale
-        const x = (1024 - w) / 2
-        const y = (1024 - h) / 2
 
         ctx.globalAlpha = 0.72
-        ctx.drawImage(targetImage, x, y, w, h)
+        ctx.save()
+        ctx.translate(512, 512)
+        ctx.rotate(rotationRad)
+        ctx.drawImage(targetImage, -w / 2, -h / 2, w, h)
+        ctx.restore()
       } else {
         ctx.globalAlpha = 0.34
         ctx.strokeStyle = 'rgba(255,255,255,.22)'
