@@ -192,6 +192,22 @@
       }
     }
 
+
+    #scenePreview {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      background: #120718;
+    }
+
+    .preview-frame-wrap {
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
   </style>
 </head>
 
@@ -200,21 +216,16 @@
     <section class="preview-panel">
       <div class="preview-toolbar">
         <div>
-          <div class="preview-toolbar-title">AR Preview</div>
-          <div style="opacity:.72;font-size:13px;">/8wall/?viewer=1&dev=1</div>
+          <div class="preview-toolbar-title">2D Scene Preview</div>
+          <div style="opacity:.72;font-size:13px;">2D layout preview без камеры</div>
         </div>
         <div>
-          <button id="refreshPreview" class="secondary" type="button">Обновить preview</button>
-          <a id="openPreviewLarge" class="button" href="/8wall/?viewer=1&dev=1" target="_blank">Открыть отдельно</a>
+          <button id="refreshPreview" class="secondary" type="button">Обновить сцену</button>
+          <a id="openPreviewLarge" class="button" href="/8wall/?viewer=1&dev=1" target="_blank">Открыть AR отдельно</a>
         </div>
       </div>
       <div class="preview-frame-wrap">
-        <iframe
-          id="previewFrame"
-          src="/8wall/?viewer=1&dev=1"
-          allow="camera; microphone; fullscreen; xr-spatial-tracking"
-          allowfullscreen
-        ></iframe>
+        <canvas id="scenePreview" width="1024" height="1024"></canvas>
       </div>
     </section>
 
@@ -339,11 +350,12 @@
 
     const STORAGE_KEY = 'smktSceneConfigDraft'
     const el = (id) => document.getElementById(id)
-    const previewFrame = el('previewFrame')
+    const scenePreview = el('scenePreview')
+    const scenePreviewCtx = scenePreview?.getContext('2d')
 
 
     function getPreviewUrl() {
-      return `/8wall/?viewer=1&dev=1&ts=${Date.now()}`
+      return `2D layout preview без камеры&ts=${Date.now()}`
     }
 
     function refreshPreview() {
@@ -370,6 +382,231 @@
 
       return result
     }
+
+
+    const targetImage = new Image()
+    let targetImageLoaded = false
+
+    const targetCandidates = [
+      '../image-targets/waves.png',
+      '../image-targets/waves.jpg',
+      '../image-targets/waves.jpeg',
+      '../image-targets/waves.webp',
+      '../image-targets/waves.svg',
+    ]
+
+    function loadTargetImage(index = 0) {
+      if (!targetCandidates[index]) {
+        drawScenePreview()
+        return
+      }
+
+      targetImage.onload = () => {
+        targetImageLoaded = true
+        drawScenePreview()
+      }
+
+      targetImage.onerror = () => {
+        loadTargetImage(index + 1)
+      }
+
+      targetImage.src = targetCandidates[index]
+    }
+
+    function roundRectPreview(ctx, x, y, w, h, r) {
+      ctx.beginPath()
+      ctx.moveTo(x + r, y)
+      ctx.lineTo(x + w - r, y)
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r)
+      ctx.lineTo(x + w, y + h - r)
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h)
+      ctx.lineTo(x + r, y + h)
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r)
+      ctx.lineTo(x, y + r)
+      ctx.quadraticCurveTo(x, y, x + r, y)
+      ctx.closePath()
+    }
+
+    function wrapPreviewText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = String(text).split(' ')
+      let line = ''
+      let currentY = y
+
+      for (let i = 0; i < words.length; i++) {
+        const testLine = `${line}${words[i]} `
+        const metrics = ctx.measureText(testLine)
+
+        if (metrics.width > maxWidth && i > 0) {
+          ctx.fillText(line.trim(), x, currentY)
+          line = `${words[i]} `
+          currentY += lineHeight
+        } else {
+          line = testLine
+        }
+      }
+
+      ctx.fillText(line.trim(), x, currentY)
+    }
+
+    function drawTargetBackground(ctx) {
+      ctx.save()
+      ctx.fillStyle = '#100716'
+      ctx.fillRect(0, 0, 1024, 1024)
+
+      if (targetImageLoaded) {
+        const scale = Math.min(1024 / targetImage.width, 1024 / targetImage.height)
+        const w = targetImage.width * scale
+        const h = targetImage.height * scale
+        const x = (1024 - w) / 2
+        const y = (1024 - h) / 2
+
+        ctx.globalAlpha = 0.72
+        ctx.drawImage(targetImage, x, y, w, h)
+      } else {
+        ctx.globalAlpha = 0.34
+        ctx.strokeStyle = 'rgba(255,255,255,.22)'
+        ctx.lineWidth = 1
+
+        for (let i = 0; i <= 1024; i += 64) {
+          ctx.beginPath()
+          ctx.moveTo(i, 0)
+          ctx.lineTo(i, 1024)
+          ctx.stroke()
+
+          ctx.beginPath()
+          ctx.moveTo(0, i)
+          ctx.lineTo(1024, i)
+          ctx.stroke()
+        }
+
+        ctx.globalAlpha = 1
+        ctx.fillStyle = 'rgba(255,255,255,.55)'
+        ctx.font = '700 28px system-ui'
+        ctx.textAlign = 'center'
+        ctx.fillText('TARGET PREVIEW', 512, 512)
+      }
+
+      ctx.globalAlpha = 1
+      ctx.strokeStyle = 'rgba(255, 209, 255, .8)'
+      ctx.lineWidth = 3
+      ctx.strokeRect(2, 2, 1020, 1020)
+
+      ctx.restore()
+    }
+
+    function drawScenePreview() {
+      if (!scenePreviewCtx) return
+
+      readInputValues()
+
+      const ctx = scenePreviewCtx
+      const cfg = config
+      const UI = cfg.panel2d
+      const cx = 512
+
+      ctx.clearRect(0, 0, 1024, 1024)
+      drawTargetBackground(ctx)
+
+      ctx.save()
+
+      const main = UI.main
+      const mainGradient = ctx.createLinearGradient(main.x, main.y, main.x + main.w, main.y + main.h)
+      mainGradient.addColorStop(0, main.gradient[0])
+      mainGradient.addColorStop(0.5, main.gradient[1])
+      mainGradient.addColorStop(1, main.gradient[2])
+
+      roundRectPreview(ctx, main.x, main.y, main.w, main.h, main.r)
+      ctx.fillStyle = mainGradient
+      ctx.fill()
+
+      ctx.lineWidth = main.strokeWidth
+      ctx.strokeStyle = main.strokeStyle
+      ctx.stroke()
+
+      const glow = ctx.createRadialGradient(cx, main.y + 155, 10, cx, main.y + 180, 470)
+      glow.addColorStop(0, UI.glow.colorStart)
+      glow.addColorStop(1, UI.glow.colorEnd)
+      ctx.fillStyle = glow
+      ctx.fillRect(main.x - 90, main.y - 90, main.w + 180, main.h + 180)
+
+      ctx.textAlign = 'center'
+      ctx.fillStyle = UI.title.color1
+      ctx.font = `800 ${UI.title.size1}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+      ctx.fillText(cfg.aura.titleLine1, cx, UI.title.y1)
+
+      ctx.fillStyle = UI.title.color2
+      ctx.font = `800 ${UI.title.size2}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+      ctx.fillText(cfg.aura.titleLine2, cx, UI.title.y2)
+
+      const metricValues = [97, 94, 91, 88]
+      const m = UI.metrics
+
+      cfg.aura.metrics.forEach((metric, i) => {
+        const value = metricValues[i] ?? 90
+        const p = value / 100
+        const y = m.startY + i * m.gap
+
+        ctx.textAlign = 'left'
+        ctx.font = `700 ${m.labelSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+        ctx.fillStyle = i === 0 ? m.labelColorFirst : m.labelColorOther
+        ctx.fillText(metric.label || 'metric', m.labelX, y + 8)
+
+        roundRectPreview(ctx, m.barX, y - 13, m.barW, m.barH, 14)
+        ctx.fillStyle = m.barBg
+        ctx.fill()
+
+        const fillW = Math.max(0, m.barW * p)
+        const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
+        barGradient.addColorStop(0, m.barGradient[0])
+        barGradient.addColorStop(0.55, m.barGradient[1])
+        barGradient.addColorStop(1, m.barGradient[2])
+
+        roundRectPreview(ctx, m.barX, y - 13, fillW, m.barH, 14)
+        ctx.fillStyle = barGradient
+        ctx.fill()
+
+        ctx.textAlign = 'right'
+        ctx.font = `800 ${m.valueSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+        ctx.fillStyle = m.valueColor
+        ctx.fillText(`${value}%`, m.valueX, y + 10)
+      })
+
+      const phrase = UI.phrase
+      roundRectPreview(ctx, phrase.x, phrase.y, phrase.w, phrase.h, phrase.r)
+      ctx.fillStyle = phrase.fillStyle
+      ctx.fill()
+
+      ctx.lineWidth = 2.5
+      ctx.strokeStyle = phrase.strokeLoaded
+      ctx.stroke()
+
+      ctx.textAlign = 'center'
+      ctx.fillStyle = phrase.textColor
+      ctx.font = `700 ${phrase.fontSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
+      wrapPreviewText(ctx, cfg.aura.phrases[0] || '', cx, phrase.textY, phrase.w - 80, phrase.lineHeight)
+
+      const pl = UI.planets
+      const planetColors = ['#ff79d8', '#8c7cff', '#65eaff', '#ffd36b']
+
+      for (let i = 0; i < 4; i++) {
+        const a = i * Math.PI * 0.5
+        const x = pl.cx + Math.cos(a) * pl.rx
+        const y = pl.cy + Math.sin(a) * pl.ry
+        const size = pl.baseSize + i * 4
+
+        const pg = ctx.createRadialGradient(x - size * 0.3, y - size * 0.3, 2, x, y, size)
+        pg.addColorStop(0, '#ffffff')
+        pg.addColorStop(1, planetColors[i])
+
+        ctx.beginPath()
+        ctx.fillStyle = pg
+        ctx.arc(x, y, size, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      ctx.restore()
+    }
+
 
     function loadConfig() {
       const saved = localStorage.getItem(STORAGE_KEY)
@@ -550,6 +787,7 @@
       const previewUrl = getPreviewUrl()
       el('preview').href = previewUrl
       if (el('openPreviewLarge')) el('openPreviewLarge').href = previewUrl
+      drawScenePreview()
     }
 
     document.querySelectorAll('input, textarea').forEach((input) => {
@@ -577,6 +815,7 @@
     })
 
     setInputValues()
+    loadTargetImage()
     updateOutput()
   </script>
 </body>
