@@ -194,9 +194,6 @@
 
 
     #scenePreview {
-      transform-origin: center center;
-      touch-action: none;
-      cursor: grab;
       width: 100%;
       height: 100%;
       display: block;
@@ -352,56 +349,6 @@
   <script type="module">
     import { DEFAULT_SCENE_CONFIG } from '../config/scene-config.js'
 
-
-    function viewerIsPlainObject(value) {
-      return value !== null && typeof value === 'object' && !Array.isArray(value)
-    }
-
-    function viewerDeepMerge(base, override) {
-      if (!viewerIsPlainObject(base) || !viewerIsPlainObject(override)) {
-        return override === undefined ? base : override
-      }
-
-      const output = { ...base }
-
-      for (const [key, value] of Object.entries(override)) {
-        if (viewerIsPlainObject(value) && viewerIsPlainObject(output[key])) {
-          output[key] = viewerDeepMerge(output[key], value)
-        } else {
-          output[key] = value
-        }
-      }
-
-      return output
-    }
-
-    async function getViewerInitialConfig() {
-      let initialConfig = DEFAULT_SCENE_CONFIG
-
-      try {
-        const params = new URLSearchParams(window.location.search)
-        const variantName = params.get('variant')
-
-        if (variantName && /^[a-z0-9-]+$/i.test(variantName)) {
-          const variantModule = await import(`../config/variants/${variantName}.js?v=${Date.now()}`)
-          const variantConfig =
-            variantModule.SCENE_CONFIG_PATCH ||
-            variantModule.SCENE_CONFIG ||
-            variantModule.DEFAULT_SCENE_CONFIG ||
-            {}
-
-          initialConfig = viewerDeepMerge(initialConfig, variantConfig)
-          console.log('[viewer] variant loaded:', variantName)
-        }
-      } catch (error) {
-        console.warn('[viewer] failed to load variant config:', error)
-      }
-
-      return initialConfig
-    }
-
-    const INITIAL_SCENE_CONFIG = await getViewerInitialConfig()
-
     const STORAGE_KEY = 'smktSceneConfigDraft'
     const el = (id) => document.getElementById(id)
     const scenePreview = el('scenePreview')
@@ -438,77 +385,6 @@
     }
 
 
-
-    let previewZoom = 1
-    let previewPanX = 0
-    let previewPanY = 0
-    let previewDragging = false
-    let previewLastX = 0
-    let previewLastY = 0
-    let previewPinchDistance = 0
-
-    function applyPreviewTransform() {
-      if (!scenePreview) return
-      scenePreview.style.transform = `translate(${previewPanX}px, ${previewPanY}px) scale(${previewZoom})`
-    }
-
-    function clampPreviewZoom(value) {
-      return Math.max(0.35, Math.min(4, value))
-    }
-
-    function getTouchDistance(touches) {
-      const dx = touches[0].clientX - touches[1].clientX
-      const dy = touches[0].clientY - touches[1].clientY
-      return Math.sqrt(dx * dx + dy * dy)
-    }
-
-    if (scenePreview) {
-      scenePreview.addEventListener('wheel', (event) => {
-        event.preventDefault()
-        const direction = event.deltaY > 0 ? -1 : 1
-        const factor = direction > 0 ? 1.08 : 0.92
-        previewZoom = clampPreviewZoom(previewZoom * factor)
-        applyPreviewTransform()
-      }, { passive: false })
-
-      scenePreview.addEventListener('pointerdown', (event) => {
-        previewDragging = true
-        previewLastX = event.clientX
-        previewLastY = event.clientY
-        scenePreview.setPointerCapture(event.pointerId)
-      })
-
-      scenePreview.addEventListener('pointermove', (event) => {
-        if (!previewDragging) return
-        previewPanX += event.clientX - previewLastX
-        previewPanY += event.clientY - previewLastY
-        previewLastX = event.clientX
-        previewLastY = event.clientY
-        applyPreviewTransform()
-      })
-
-      scenePreview.addEventListener('pointerup', () => {
-        previewDragging = false
-      })
-
-      scenePreview.addEventListener('touchstart', (event) => {
-        if (event.touches.length === 2) {
-          previewPinchDistance = getTouchDistance(event.touches)
-        }
-      }, { passive: false })
-
-      scenePreview.addEventListener('touchmove', (event) => {
-        if (event.touches.length === 2 && previewPinchDistance > 0) {
-          event.preventDefault()
-          const nextDistance = getTouchDistance(event.touches)
-          previewZoom = clampPreviewZoom(previewZoom * (nextDistance / previewPinchDistance))
-          previewPinchDistance = nextDistance
-          applyPreviewTransform()
-        }
-      }, { passive: false })
-    }
-
-
     const targetImage = new Image()
     let targetImageLoaded = false
 
@@ -529,13 +405,13 @@
       const targetCandidates = getTargetCandidates()
 
       if (!targetCandidates[index]) {
-        safeDrawScenePreview()
+        drawScenePreview()
         return
       }
 
       targetImage.onload = () => {
         targetImageLoaded = true
-        safeDrawScenePreview()
+        drawScenePreview()
       }
 
       targetImage.onerror = () => {
@@ -593,11 +469,7 @@
         const y = (1024 - h) / 2
 
         ctx.globalAlpha = 0.72
-        ctx.save()
-        ctx.translate(512, 512)
-        ctx.rotate(((config.target?.previewRotationDeg || 0) * Math.PI) / 180)
-        ctx.drawImage(targetImage, -w / 2, -h / 2, w, h)
-        ctx.restore()
+        ctx.drawImage(targetImage, x, y, w, h)
       } else {
         ctx.globalAlpha = 0.34
         ctx.strokeStyle = 'rgba(255,255,255,.22)'
@@ -652,14 +524,6 @@
       return ui
     }
 
-    
-    function percentToProgress(value) {
-      const number = Number(value)
-      if (!Number.isFinite(number)) return 0
-      return Math.max(0, Math.min(1, number / 100))
-    }
-    
-    
     function drawScenePreview() {
       if (!scenePreviewCtx) return
 
@@ -721,7 +585,7 @@
         ctx.fillStyle = m.barBg
         ctx.fill()
 
-        const fillW = Math.max(0, m.barW * percentToProgress(value))
+        const fillW = Math.max(0, m.barW * p)
         const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
         barGradient.addColorStop(0, m.barGradient[0])
         barGradient.addColorStop(0.55, m.barGradient[1])
@@ -777,12 +641,12 @@
     function loadConfig() {
       const saved = localStorage.getItem(STORAGE_KEY)
 
-      if (!saved) return structuredClone(INITIAL_SCENE_CONFIG)
+      if (!saved) return structuredClone(DEFAULT_SCENE_CONFIG)
 
       try {
         return deepMerge(DEFAULT_SCENE_CONFIG, JSON.parse(saved))
       } catch {
-        return structuredClone(INITIAL_SCENE_CONFIG)
+        return structuredClone(DEFAULT_SCENE_CONFIG)
       }
     }
 
@@ -955,7 +819,7 @@
       const previewUrl = getPreviewUrl()
       el('preview').href = previewUrl
       if (el('openPreviewLarge')) el('openPreviewLarge').href = previewUrl
-      safeDrawScenePreview()
+      drawScenePreview()
     }
 
     document.querySelectorAll('input, textarea').forEach((input) => {
