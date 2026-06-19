@@ -16,24 +16,43 @@ export const SCENE_CONFIG_PATCH = {
     "statusText": "ТВОЙ ВАЙБ — ТВОЯ КРАСОТА",
     "phrases": [
       "Сегодня твоя энергия особенно сильна ✨",
-      "Не подстраивайся под чужие стандарты. Создавай свои.",
       "Вселенная сегодня на твоей стороне 🌙",
       "Время сиять ярче обычного ✨",
       "Твоя аура сегодня особенно сильна 💜"
     ],
     "metrics": [
-      { "label": "сияние", "icon": "✦", "min": 56, "max": 100 },
-      { "label": "красота", "icon": "♥", "min": 56, "max": 100 },
-      { "label": "энергия", "icon": "⚡", "min": 56, "max": 100 },
-      { "label": "аура", "icon": "☁", "min": 56, "max": 100 }
+      {
+        "label": "сияние",
+        "icon": "✦",
+        "min": 56,
+        "max": 100
+      },
+      {
+        "label": "красота",
+        "icon": "♥",
+        "min": 56,
+        "max": 100
+      },
+      {
+        "label": "энергия",
+        "icon": "⚡",
+        "min": 56,
+        "max": 100
+      },
+      {
+        "label": "аура",
+        "icon": "☁",
+        "min": 56,
+        "max": 100
+      }
     ]
   },
   "panel2d": {
     "main": {
-      "x": 120,
-      "y": 287,
-      "w": 790,
-      "h": 428,
+      "x": 87,
+      "y": 272,
+      "w": 844,
+      "h": 447,
       "r": 100,
       "gradient": [
         "rgba(255, 76, 205, 0.7)",
@@ -77,14 +96,14 @@ export const SCENE_CONFIG_PATCH = {
       "sparkColor": "rgba(255,255,255,0.88)"
     },
     "phrase": {
-      "x": 126,
-      "y": 752,
-      "w": 776,
+      "x": 101,
+      "y": 746,
+      "w": 814,
       "h": 123,
       "r": 32,
       "textY": 818,
-      "fontSize": 31,
-      "lineHeight": 44,
+      "fontSize": 35,
+      "lineHeight": 49,
       "fillStyle": "rgba(20, 8, 38, 0.72)",
       "strokeLoaded": "rgba(255, 225, 255, 0.94)",
       "strokeLoading": "rgba(255, 225, 255, 0.38)",
@@ -92,7 +111,7 @@ export const SCENE_CONFIG_PATCH = {
     },
     "planets": {
       "cx": 514,
-      "cy": 546,
+      "cy": 562,
       "rx": 431,
       "ry": 382,
       "baseSize": 57,
@@ -102,12 +121,24 @@ export const SCENE_CONFIG_PATCH = {
   "spheres": {
     "scale": 0.22,
     "breathScale": 0.22,
-    "position": { "x": 0, "y": -0.34, "z": 0.1 },
-    "rotation": { "x": 1.5707963267948966, "y": 0, "z": 0 },
+    "position": {
+      "x": 0,
+      "y": -0.34,
+      "z": 0.1
+    },
+    "rotation": {
+      "x": 1.5707963267948966,
+      "y": 0,
+      "z": 0
+    },
     "spinSpeed": 0.12
   },
   "content": {
-    "position": { "x": 0, "y": 0, "z": 0.02 },
+    "position": {
+      "x": 0,
+      "y": 0,
+      "z": 0.02
+    },
     "scale": 1
   },
   "panel": {
