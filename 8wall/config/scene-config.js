@@ -3,6 +3,8 @@ export const DEFAULT_SCENE_CONFIG = {
     name: 'waves',
     json: './image-targets/waves.json',
     spheresGlb: './assets/models/spheres.glb',
+    previewRotationDeg: -90,
+    previewImage: '/8wall/image-targets/waves_original.jpg',
   },
 
   timing: {
@@ -34,6 +36,7 @@ export const DEFAULT_SCENE_CONFIG = {
   },
 
   panel2d: {
+    offsetY: 0,
     main: {
       x: 92,
       y: 62,

@@ -383,6 +383,28 @@ function getSequentialMoodProgress(globalT, count) {
 
 
 
+
+function clonePanel2dConfig(panel2d) {
+  return JSON.parse(JSON.stringify(panel2d))
+}
+
+function getPanel2dRuntimeConfig(panel2d) {
+  const ui = clonePanel2dConfig(panel2d)
+  const offsetY = Number(ui.offsetY || 0)
+
+  if (!offsetY) return ui
+
+  ui.main.y += offsetY
+  ui.title.y1 += offsetY
+  ui.title.y2 += offsetY
+  ui.metrics.startY += offsetY
+  ui.phrase.y += offsetY
+  ui.phrase.textY += offsetY
+  ui.planets.cy += offsetY
+
+  return ui
+}
+
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   const words = String(text).split(' ')
   let line = ''
@@ -402,6 +424,13 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   }
 
   ctx.fillText(line.trim(), x, currentY)
+}
+
+
+function percentToProgress(value) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return 0
+  return Math.max(0, Math.min(1, number / 100))
 }
 
 function createPanel() {
@@ -424,7 +453,7 @@ function createPanel() {
   const mesh = new THREE.Mesh(geometry, material)
   mesh.position.set(0, 0, 0.02)
 
-  const UI = SCENE_CONFIG.panel2d
+  const UI = getPanel2dRuntimeConfig(SCENE_CONFIG.panel2d)
 
   const starSeeds = Array.from({ length: 70 }, (_, i) => {
     const a = Math.sin(i * 999.13) * 10000
@@ -536,7 +565,7 @@ function createPanel() {
         ctx.fill()
 
         // заполнение шкалы
-        const fillW = Math.max(0, m.barW * p)
+        const fillW = Math.max(0, m.barW * percentToProgress(value))
         const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
         barGradient.addColorStop(0, m.barGradient[0])
         barGradient.addColorStop(0.55, m.barGradient[1])
