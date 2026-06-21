@@ -224,6 +224,49 @@
       display: grid;
       place-items: center;
     }
+        
+    /* TWO_LAYER_PREVIEW_FIX */
+    .preview-stage {
+      --target-aspect: 1 / 1;
+      position: relative;
+      width: min(100%, calc(100vh - 120px));
+      max-height: calc(100vh - 120px);
+      aspect-ratio: var(--target-aspect);
+      border-radius: 18px;
+      overflow: hidden;
+      background: #13051c;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.16), 0 30px 80px rgba(0,0,0,.35);
+      transform-origin: center center;
+      touch-action: none;
+      cursor: grab;
+    }
+
+    #targetPreview,
+    #scenePreview {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: transparent;
+    }
+
+    #targetPreview {
+      z-index: 1;
+    }
+
+    #scenePreview {
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .preview-frame-wrap {
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      box-sizing: border-box;
+    }
         </style>
 </head>
 
@@ -241,7 +284,10 @@
         </div>
       </div>
       <div class="preview-frame-wrap">
-        <canvas id="scenePreview" width="1024" height="1024"></canvas>
+        <div id="previewStage" class="preview-stage">
+          <canvas id="targetPreview" width="1024" height="1024"></canvas>
+          <canvas id="scenePreview" width="1024" height="1024"></canvas>
+        </div>
       </div>
     </section>
 
@@ -367,6 +413,9 @@
 
     const STORAGE_KEY = 'smktSceneConfigDraft'
     const el = (id) => document.getElementById(id)
+    const previewStage = el('previewStage')
+    const targetPreview = el('targetPreview')
+    const targetPreviewCtx = targetPreview?.getContext('2d')
     const scenePreview = el('scenePreview')
     const scenePreviewCtx = scenePreview?.getContext('2d')
 
@@ -471,6 +520,55 @@
     }
 
 
+    
+    function setupTwoLayerPreviewStage() {
+      if (!previewStage || !targetPreview || !scenePreview) return
+
+      let targetW = 1024
+      let targetH = 1024
+
+      if (targetImageLoaded && targetImage?.width && targetImage?.height) {
+        const rotationDeg = Number(config?.target?.previewRotationDeg ?? -90)
+        const rotated = Math.abs(rotationDeg) % 180 === 90
+
+        targetW = rotated ? targetImage.height : targetImage.width
+        targetH = rotated ? targetImage.width : targetImage.height
+      }
+
+      targetPreview.width = targetW
+      targetPreview.height = targetH
+      scenePreview.width = targetW
+      scenePreview.height = targetH
+
+      previewStage.style.setProperty('--target-aspect', `${targetW} / ${targetH}`)
+
+      console.log('[viewer] two-layer stage:', {
+        targetW,
+        targetH,
+        aspect: targetW / targetH,
+        sourceW: targetImage?.width,
+        sourceH: targetImage?.height
+      })
+    }
+
+    function getSceneUniformScale() {
+      if (!scenePreview) return 1
+      return Math.min(scenePreview.width / 1024, scenePreview.height / 1024)
+    }
+
+    function getSceneOffsetX() {
+      if (!scenePreview) return 0
+      const scale = getSceneUniformScale()
+      return (scenePreview.width - 1024 * scale) / 2
+    }
+
+    function getSceneOffsetY() {
+      if (!scenePreview) return 0
+      const scale = getSceneUniformScale()
+      return (scenePreview.height - 1024 * scale) / 2
+    }
+
+
     function roundRectPreview(ctx, x, y, w, h, r) {
       ctx.beginPath()
       ctx.moveTo(x + r, y)
@@ -507,39 +605,47 @@
     }
 
     function drawTargetBackground(ctx) {
+      if (!ctx) return
+
+      const cw = ctx.canvas.width
+      const ch = ctx.canvas.height
+
       ctx.save()
-      ctx.fillStyle = '#100716'
-      ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, cw, ch)
+      ctx.fillStyle = '#100518'
+      ctx.fillRect(0, 0, cw, ch)
 
       if (targetImageLoaded) {
-        const rotationDeg = -90
+        const rotationDeg = Number(config?.target?.previewRotationDeg ?? -90)
         const rotationRad = rotationDeg * Math.PI / 180
-        const rotatedFitW = targetImage.height
-        const rotatedFitH = targetImage.width
-        const scale = Math.min(1024 / rotatedFitW, 1024 / rotatedFitH)
+        const rotated = Math.abs(rotationDeg) % 180 === 90
+
+        const fitW = rotated ? targetImage.height : targetImage.width
+        const fitH = rotated ? targetImage.width : targetImage.height
+
+        const scale = Math.min(cw / fitW, ch / fitH)
         const w = targetImage.width * scale
         const h = targetImage.height * scale
 
         ctx.globalAlpha = 0.72
-        ctx.save()
-        ctx.translate(512, 512)
+        ctx.translate(cw / 2, ch / 2)
         ctx.rotate(rotationRad)
         ctx.drawImage(targetImage, -w / 2, -h / 2, w, h)
-        ctx.restore()
       } else {
         ctx.globalAlpha = 0.34
         ctx.strokeStyle = 'rgba(255,255,255,.22)'
         ctx.lineWidth = 1
 
-        for (let i = 0; i <= Math.max(ctx.canvas.width, ctx.canvas.height); i += 64) {
+        for (let i = 0; i <= Math.max(cw, ch); i += 64) {
           ctx.beginPath()
           ctx.moveTo(i, 0)
-          ctx.lineTo(i, ctx.canvas.height)
+          ctx.lineTo(i, ch)
           ctx.stroke()
 
           ctx.beginPath()
           ctx.moveTo(0, i)
-          ctx.lineTo(ctx.canvas.width, i)
+          ctx.lineTo(cw, i)
           ctx.stroke()
         }
 
@@ -547,14 +653,15 @@
         ctx.fillStyle = 'rgba(255,255,255,.55)'
         ctx.font = '700 28px system-ui'
         ctx.textAlign = 'center'
-        ctx.fillText('TARGET PREVIEW', ctx.canvas.width / 2, ctx.canvas.height / 2)
+        ctx.fillText('TARGET PREVIEW', cw / 2, ch / 2)
       }
 
-      ctx.globalAlpha = 1
-      ctx.strokeStyle = 'rgba(255, 209, 255, .8)'
-      ctx.lineWidth = 3
-      ctx.strokeRect(2, 2, ctx.canvas.width - 4, ctx.canvas.height - 4)
+      ctx.restore()
 
+      ctx.save()
+      ctx.strokeStyle = 'rgba(255, 209, 255, .85)'
+      ctx.lineWidth = 4
+      ctx.strokeRect(2, 2, cw - 4, ch - 4)
       ctx.restore()
     }
 
@@ -585,16 +692,27 @@
 
       readInputValues()
 
+      setupTwoLayerPreviewStage()
+
+      if (targetPreviewCtx) {
+        drawTargetBackground(targetPreviewCtx)
+      }
+
       const ctx = scenePreviewCtx
       const cfg = config
-      const UI = getPanel2dRuntimeConfig(cfg.panel2d)
-      const cx = 512
-
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-      drawTargetBackground(ctx)
+      const UI = typeof getPanel2dRuntimeConfig === 'function'
+        ? getPanel2dRuntimeConfig(cfg.panel2d)
+        : cfg.panel2d
 
       ctx.save()
-      ctx.scale(getSceneScaleX(), getSceneScaleY())
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+
+      const sceneScale = getSceneUniformScale()
+      ctx.translate(getSceneOffsetX(), getSceneOffsetY())
+      ctx.scale(sceneScale, sceneScale)
+
+      const cx = 512
 
       const main = UI.main
       const mainGradient = ctx.createLinearGradient(main.x, main.y, main.x + main.w, main.y + main.h)
@@ -625,12 +743,11 @@
       ctx.font = `800 ${UI.title.size2}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
       ctx.fillText(cfg.aura.titleLine2, cx, UI.title.y2)
 
-      const metricValues = [97, 94, 91, 88]
+      const metricValues = [67, 84, 92, 73]
       const m = UI.metrics
 
       cfg.aura.metrics.forEach((metric, i) => {
         const value = metricValues[i] ?? 90
-        const p = value / 100
         const y = m.startY + i * m.gap
 
         ctx.textAlign = 'left'
@@ -642,7 +759,11 @@
         ctx.fillStyle = m.barBg
         ctx.fill()
 
-        const fillW = Math.max(0, m.barW * p)
+        const progress = typeof percentToProgress === 'function'
+          ? percentToProgress(value)
+          : Math.max(0, Math.min(1, value / 100))
+
+        const fillW = Math.max(0, m.barW * progress)
         const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
         barGradient.addColorStop(0, m.barGradient[0])
         barGradient.addColorStop(0.55, m.barGradient[1])
