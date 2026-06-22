@@ -427,6 +427,18 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 }
 
 
+
+function getDisplayedMetricValue(metric, value) {
+  const label = String(metric?.label || '').trim().toLowerCase()
+
+  if (label === 'красота') {
+    return 100
+  }
+
+  return value
+}
+
+
 function percentToProgress(value) {
   const number = Number(value)
   if (!Number.isFinite(number)) return 0
@@ -565,7 +577,8 @@ function createPanel() {
         ctx.fill()
 
         // заполнение шкалы
-        const fillW = Math.max(0, m.barW * percentToProgress(value))
+        const displayValue = getDisplayedMetricValue(metric, value)
+        const fillW = Math.max(0, m.barW * percentToProgress(displayValue))
         const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
         barGradient.addColorStop(0, m.barGradient[0])
         barGradient.addColorStop(0.55, m.barGradient[1])
@@ -579,7 +592,7 @@ function createPanel() {
         ctx.textAlign = 'right'
         ctx.font = `800 ${m.valueSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
         ctx.fillStyle = m.valueColor
-        ctx.fillText(`${value}%`, m.valueX, y + 10)
+        ctx.fillText(`${displayValue}%`, m.valueX, y + 10)
 
         if (p > 0.05 && p < 1) {
           const sparkX = m.barX + fillW

@@ -1,3 +1,15 @@
+
+function getDisplayedMetricValue(metric, value) {
+  const label = String(metric?.label || '').trim().toLowerCase()
+
+  if (label === 'красота') {
+    return 100
+  }
+
+  return value
+}
+
+
 <!doctype html>
 <html lang="ru">
 <head>
@@ -763,7 +775,8 @@
           ? percentToProgress(value)
           : Math.max(0, Math.min(1, value / 100))
 
-        const fillW = Math.max(0, m.barW * progress)
+        const displayValue = getDisplayedMetricValue(metric, value)
+        const fillW = Math.max(0, m.barW * percentToProgress(displayValue))
         const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
         barGradient.addColorStop(0, m.barGradient[0])
         barGradient.addColorStop(0.55, m.barGradient[1])
@@ -776,7 +789,7 @@
         ctx.textAlign = 'right'
         ctx.font = `800 ${m.valueSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
         ctx.fillStyle = m.valueColor
-        ctx.fillText(`${value}%`, m.valueX, y + 10)
+        ctx.fillText(`${displayValue}%`, m.valueX, y + 10)
       })
 
       const phrase = UI.phrase
