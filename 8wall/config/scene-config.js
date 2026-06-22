@@ -6,7 +6,7 @@ export const DEFAULT_SCENE_CONFIG = {
   },
   "timing": {
     "auraAppearDelayMs": 0,
-    "auraLoadDurationMs": 4200,
+    "auraLoadDurationMs": 5200,
     "fireworkDurationMs": 2200,
     "planetsStartDelayMs": 2200
   },
