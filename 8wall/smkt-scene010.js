@@ -427,71 +427,6 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 }
 
 
-
-const beautyMetricAnimationStarts = new Map()
-let beautyMetricAnimationFrameRequested = false
-
-function isBeautyMetric(metric) {
-  return String(metric?.label || '').trim().toLowerCase() === 'красота'
-}
-
-function getBeautyMetricAnimationDurationMs() {
-  try {
-    if (typeof SCENE_CONFIG !== 'undefined') {
-      return Number(SCENE_CONFIG?.timing?.auraLoadDurationMs || 4200)
-    }
-  } catch {}
-
-  try {
-    if (typeof config !== 'undefined') {
-      return Number(config?.timing?.auraLoadDurationMs || 4200)
-    }
-  } catch {}
-
-  return 4200
-}
-
-function requestBeautyMetricAnimationFrame() {
-  if (beautyMetricAnimationFrameRequested) return
-
-  beautyMetricAnimationFrameRequested = true
-
-  requestAnimationFrame(() => {
-    beautyMetricAnimationFrameRequested = false
-
-    try {
-      if (typeof drawScenePreview === 'function') {
-        drawScenePreview()
-      }
-    } catch {}
-  })
-}
-
-function getDisplayedMetricValue(metric, value) {
-  if (!isBeautyMetric(metric)) {
-    return value
-  }
-
-  const key = String(metric?.label || 'красота')
-  const now = performance.now()
-
-  if (!beautyMetricAnimationStarts.has(key)) {
-    beautyMetricAnimationStarts.set(key, now)
-  }
-
-  const start = beautyMetricAnimationStarts.get(key)
-  const duration = Math.max(300, getBeautyMetricAnimationDurationMs())
-  const progress = Math.max(0, Math.min(1, (now - start) / duration))
-  const displayedValue = Math.round(100 * progress)
-
-  if (progress < 1) {
-    requestBeautyMetricAnimationFrame()
-  }
-
-  return displayedValue
-}
-
-
 function percentToProgress(value) {
   const number = Number(value)
   if (!Number.isFinite(number)) return 0
@@ -630,8 +565,7 @@ function createPanel() {
         ctx.fill()
 
         // заполнение шкалы
-        const displayValue = getDisplayedMetricValue(metric, value)
-        const fillW = Math.max(0, m.barW * percentToProgress(displayValue))
+        const fillW = Math.max(0, m.barW * percentToProgress(value))
         const barGradient = ctx.createLinearGradient(m.barX, y, m.barX + m.barW, y)
         barGradient.addColorStop(0, m.barGradient[0])
         barGradient.addColorStop(0.55, m.barGradient[1])
@@ -645,7 +579,7 @@ function createPanel() {
         ctx.textAlign = 'right'
         ctx.font = `800 ${m.valueSize}px system-ui, -apple-system, BlinkMacSystemFont, sans-serif`
         ctx.fillStyle = m.valueColor
-        ctx.fillText(`${displayValue}%`, m.valueX, y + 10)
+        ctx.fillText(`${value}%`, m.valueX, y + 10)
 
         if (p > 0.05 && p < 1) {
           const sparkX = m.barX + fillW
