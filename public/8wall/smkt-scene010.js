@@ -428,14 +428,67 @@ function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
 
 
 
-function getDisplayedMetricValue(metric, value) {
-  const label = String(metric?.label || '').trim().toLowerCase()
+const beautyMetricAnimationStarts = new Map()
+let beautyMetricAnimationFrameRequested = false
 
-  if (label === 'красота') {
-    return 100
+function isBeautyMetric(metric) {
+  return String(metric?.label || '').trim().toLowerCase() === 'красота'
+}
+
+function getBeautyMetricAnimationDurationMs() {
+  try {
+    if (typeof SCENE_CONFIG !== 'undefined') {
+      return Number(SCENE_CONFIG?.timing?.auraLoadDurationMs || 4200)
+    }
+  } catch {}
+
+  try {
+    if (typeof config !== 'undefined') {
+      return Number(config?.timing?.auraLoadDurationMs || 4200)
+    }
+  } catch {}
+
+  return 4200
+}
+
+function requestBeautyMetricAnimationFrame() {
+  if (beautyMetricAnimationFrameRequested) return
+
+  beautyMetricAnimationFrameRequested = true
+
+  requestAnimationFrame(() => {
+    beautyMetricAnimationFrameRequested = false
+
+    try {
+      if (typeof drawScenePreview === 'function') {
+        drawScenePreview()
+      }
+    } catch {}
+  })
+}
+
+function getDisplayedMetricValue(metric, value) {
+  if (!isBeautyMetric(metric)) {
+    return value
   }
 
-  return value
+  const key = String(metric?.label || 'красота')
+  const now = performance.now()
+
+  if (!beautyMetricAnimationStarts.has(key)) {
+    beautyMetricAnimationStarts.set(key, now)
+  }
+
+  const start = beautyMetricAnimationStarts.get(key)
+  const duration = Math.max(300, getBeautyMetricAnimationDurationMs())
+  const progress = Math.max(0, Math.min(1, (now - start) / duration))
+  const displayedValue = Math.round(100 * progress)
+
+  if (progress < 1) {
+    requestBeautyMetricAnimationFrame()
+  }
+
+  return displayedValue
 }
 
 
