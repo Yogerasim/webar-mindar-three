@@ -30,7 +30,7 @@ export const SCENE_CONFIG_PATCH = {
       {
         "label": "красота",
         "icon": "♥",
-        "min": 56,
+        "min": 100,
         "max": 100
       },
       {
